@@ -252,23 +252,27 @@
             observaciones: formData.observaciones
           };
 
+          // Crear un formulario para evitar CORS
+          const formData2 = new FormData();
+          formData2.append('data', JSON.stringify(dataToSave));
+
           const response = await fetch(APPS_SCRIPT_URL, {
             method: 'POST',
-            mode: 'no-cors',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(dataToSave)
+            body: formData2
           });
 
-          // Con mode: 'no-cors' no podemos leer la respuesta, pero asumimos éxito
-          alert(`✅ Registro ${isExistingUser ? 'actualizado' : 'creado'} exitosamente!\n\n📧 Email: ${email}\nID: ${formData.id}\n\n✉️ Se ha simulado el envío del correo electrónico con los datos del registro y el código QR.\n\nEn producción, aquí se enviaría el email automáticamente.`);
+          const result = await response.json();
           
-          setLoading(false);
-          onBack();
+          if (result.success) {
+            alert(`✅ ${result.message}!\n\n📧 Email: ${email}\nID: ${formData.id}\n\n✉️ Se ha simulado el envío del correo electrónico con los datos del registro y el código QR.\n\nVerifica tu Google Sheet para confirmar que se guardó.`);
+            setLoading(false);
+            onBack();
+          } else {
+            throw new Error(result.error || 'Error desconocido');
+          }
         } catch (error) {
-          console.error('Error:', error);
-          alert('❌ Error al guardar. Verifica tu conexión e intenta de nuevo.');
+          console.error('Error completo:', error);
+          alert('❌ Error al guardar: ' + error.message + '\n\nVerifica:\n1. Que el Apps Script esté publicado como "Cualquier usuario"\n2. Que hayas autorizado los permisos\n3. Tu conexión a internet');
           setLoading(false);
         }
       };
