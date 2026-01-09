@@ -59,7 +59,7 @@
 
     const SHEET_ID = '1qs4urivhp8Huv1BasaMNHjZwe43-C2P_sDfwzXKYQMw';
     const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
-    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzhl3TIrT7uP4XWR4IP8m_jErMVtePxwdhzpF-HrZjr1GfU42YOF1PhmdAg7eXBlWsq/exec';
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzHCfrCS7n2jLQQtY--C23Qw7ihVCoCEkrUdgxWF3twkFEsU1icYDNkz3qvL7JpyEEe/exec';
 
     // Iconos SVG
     const HomeIcon = () => (
@@ -546,6 +546,64 @@
         }
       };
 
+      const handleDelete = async () => {
+        if (isExistingUser) {
+          // Modo edición: Eliminar de Google Sheets
+          const confirmDelete = confirm(`¿Estás seguro de eliminar el registro de ${formData.nombreCompleto}?\n\nEsta acción no se puede deshacer.`);
+          
+          if (!confirmDelete) return;
+          
+          setLoading(true);
+          
+          try {
+            const deleteData = {
+              action: 'delete',
+              email: email
+            };
+
+            const formData2 = new FormData();
+            formData2.append('data', JSON.stringify(deleteData));
+
+            const response = await fetch(APPS_SCRIPT_URL, {
+              method: 'POST',
+              body: formData2
+            });
+
+            const result = await response.json();
+            
+            if (result.success) {
+              alert('✅ Registro eliminado exitosamente de Google Sheets.');
+              setLoading(false);
+              onBack();
+            } else {
+              throw new Error(result.error || 'Error al eliminar');
+            }
+          } catch (error) {
+            console.error('Error:', error);
+            alert('❌ Error al eliminar: ' + error.message);
+            setLoading(false);
+          }
+        } else {
+          // Modo creación: Limpiar formulario
+          const confirmClear = confirm('¿Estás seguro de limpiar todos los campos del formulario?');
+          
+          if (!confirmClear) return;
+          
+          setFormData({
+            nombreCompleto: '',
+            nickname: '',
+            id: 'MX' + Math.floor(Math.random() * 1000000).toString().padStart(6, '0'),
+            telefono: '',
+            nombreContactoEmergencia: '',
+            telefonoEmergencia: '',
+            direccionEmergencia: '',
+            tipoSangre: '',
+            alergias: '',
+            observaciones: ''
+          });
+        }
+      };
+
       if (!showForm) {
         return (
           <div className="flex-1 bg-gradient-to-br from-gray-100 to-gray-200 p-6">
@@ -738,6 +796,14 @@
                   </button>
                   
                   <button
+                    onClick={handleDelete}
+                    disabled={loading}
+                    className="flex-1 bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-lg font-semibold"
+                  >
+                    {isExistingUser ? 'Eliminar' : 'Limpiar'}
+                  </button>
+                  
+                  <button
                     onClick={onBack}
                     disabled={loading}
                     className="flex-1 bg-red-500 hover:bg-red-600 text-white py-3 rounded-lg font-semibold"
@@ -828,7 +894,7 @@
           <div className="bg-white text-black py-6 px-4 text-center border-b-2 border-gray-200 relative">
             <h1 className="text-2xl font-bold">GALLXS - CYCLING CLUB</h1>
             <p className="text-sm font-bold text-gray-700">{getSubtitle()}</p>
-            <span className="absolute bottom-2 right-4 text-xs text-gray-400 font-mono">Beta v1.004</span>
+            <span className="absolute bottom-2 right-4 text-xs text-gray-400 font-mono">Beta v1.005</span>
           </div>
 
           {currentScreen === 'home' && renderHome()}
