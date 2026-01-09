@@ -15,6 +15,7 @@
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://unpkg.com/jsqr@1.4.0/dist/jsQR.js"></script>
   
   <style>
     body { 
@@ -110,6 +111,403 @@
         <line x1="12" y1="17" x2="12.01" y2="17"></line>
       </svg>
     );
+
+    // Componente SOS con Escáner QR
+    const SOSScreen = ({ onBack }) => {
+      const [scanning, setScanning] = useState(false);
+      const [personData, setPersonData] = useState(null);
+      const [error, setError] = useState('');
+      const [loading, setLoading] = useState(false);
+      const videoRef = useRef(null);
+      const canvasRef = useRef(null);
+      const streamRef = useRef(null);
+      const scanIntervalRef = useRef(null);
+
+      const startCamera = async () => {
+        try {
+          setError('');
+          setScanning(true);
+          
+          await new Promise(resolve => setTimeout(resolve, 100));
+          
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: { 
+              facingMode: 'environment',
+              width: { ideal: 1280 },
+              height: { ideal: 720 }
+            }
+          });
+          
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+            streamRef.current = stream;
+            
+            videoRef.current.setAttribute('playsinline', 'true');
+            videoRef.current.setAttribute('autoplay', 'true');
+            
+            videoRef.current.onloadedmetadata = async () => {
+              try {
+                await videoRef.current.play();
+                startScanning();
+              } catch (playErr) {
+                console.error('Error playing video:', playErr);
+                setError('Error al iniciar el video. Intenta de nuevo.');
+                stopCamera();
+              }
+            };
+          }
+        } catch (err) {
+          setError('No se pudo acceder a la cámara. Verifica los permisos.');
+          console.error(err);
+          setScanning(false);
+        }
+      };
+
+      const stopCamera = () => {
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach(track => track.stop());
+          streamRef.current = null;
+        }
+        if (scanIntervalRef.current) {
+          clearInterval(scanIntervalRef.current);
+          scanIntervalRef.current = null;
+        }
+        setScanning(false);
+      };
+
+      const startScanning = () => {
+        if (typeof jsQR === 'undefined') {
+          setError('La librería de escaneo no se cargó correctamente. Recarga la página.');
+          stopCamera();
+          return;
+        }
+        
+        scanIntervalRef.current = setInterval(() => {
+          scanQRCode();
+        }, 300);
+      };
+
+      const scanQRCode = () => {
+        if (!videoRef.current || !canvasRef.current) return;
+        
+        if (typeof jsQR === 'undefined') {
+          console.error('jsQR no está cargado');
+          return;
+        }
+
+        const video = videoRef.current;
+        const canvas = canvasRef.current;
+        const context = canvas.getContext('2d');
+
+        if (video.readyState === video.HAVE_ENOUGH_DATA) {
+          const width = video.videoWidth;
+          const height = video.videoHeight;
+          
+          if (width > 0 && height > 0) {
+            canvas.width = width;
+            canvas.height = height;
+            context.drawImage(video, 0, 0, width, height);
+
+            const imageData = context.getImageData(0, 0, width, height);
+            
+            try {
+              const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                inversionAttempts: "attemptBoth",
+              });
+
+              if (code && code.data) {
+                console.log('QR detectado:', code.data);
+                stopCamera();
+                handleQRScanned(code.data);
+              }
+            } catch (err) {
+              console.error('Error al escanear:', err);
+            }
+          }
+        }
+      };
+
+      const handleQRScanned = async (qrData) => {
+        setLoading(true);
+        setError('');
+        
+        try {
+          const id = qrData.trim();
+          
+          const response = await fetch(SHEET_URL);
+          
+          if (!response.ok) {
+            throw new Error('No se pudo acceder a la hoja. Verifica que sea pública.');
+          }
+          
+          const text = await response.text();
+          const jsonString = text.match(/google\.visualization\.Query\.setResponse\((.*)\);/);
+          if (!jsonString) {
+            throw new Error('Formato de respuesta inválido');
+          }
+          
+          const json = JSON.parse(jsonString[1]);
+          
+          if (json.status === 'error') {
+            throw new Error(json.errors[0].detailed_message || 'Error en la consulta');
+          }
+          
+          const rows = json.table.rows;
+          
+          let foundPerson = null;
+          for (let i = 0; i < rows.length; i++) {
+            const row = rows[i].c;
+            if (!row) continue;
+            
+            const personId = row[3]?.v || '';
+            
+            if (personId === id) {
+              foundPerson = {
+                email: row[0]?.v || '',
+                nombreCompleto: row[1]?.v || '',
+                nickname: row[2]?.v || '',
+                id: row[3]?.v || '',
+                telefono: row[4]?.v || '',
+                nombreContactoEmergencia: row[5]?.v || '',
+                telefonoEmergencia: row[6]?.v || '',
+                direccionEmergencia: row[7]?.v || '',
+                tipoSangre: row[8]?.v || '',
+                alergias: row[9]?.v || '',
+                observaciones: row[10]?.v || ''
+              };
+              break;
+            }
+          }
+          
+          if (foundPerson) {
+            setPersonData(foundPerson);
+          } else {
+            setError(`No se encontró ningún ciclista con el ID: "${id}".`);
+          }
+        } catch (err) {
+          setError('Error: ' + err.message);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      const resetSOS = () => {
+        setPersonData(null);
+        setError('');
+        setLoading(false);
+      };
+
+      useEffect(() => {
+        return () => {
+          stopCamera();
+        };
+      }, []);
+
+      if (loading) {
+        return (
+          <div className="flex-1 bg-gradient-to-br from-red-50 to-orange-50 flex items-center justify-center p-4">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-red-600 mx-auto mb-4"></div>
+              <p className="text-gray-700 font-medium">Buscando información de emergencia...</p>
+            </div>
+          </div>
+        );
+      }
+
+      if (personData) {
+        return (
+          <div className="flex-1 bg-gradient-to-br from-red-50 to-orange-50 p-4 overflow-y-auto">
+            <div className="max-w-2xl mx-auto">
+              <div className="bg-white rounded-xl shadow-2xl overflow-hidden border-4 border-red-600">
+                {/* Header Emergencia */}
+                <div className="bg-red-600 text-white p-6">
+                  <div className="flex items-center justify-center gap-3">
+                    <AlertIcon />
+                    <h2 className="text-2xl font-bold">INFORMACIÓN DE EMERGENCIA</h2>
+                  </div>
+                </div>
+
+                {/* Información Crítica */}
+                <div className="p-6 space-y-4">
+                  {/* Nombre y Datos Críticos */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-red-50 p-4 rounded-lg border-2 border-red-300">
+                      <p className="text-sm font-semibold text-gray-600 mb-1">NOMBRE COMPLETO</p>
+                      <p className="text-xl font-bold text-gray-900">{personData.nombreCompleto}</p>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <div className="bg-red-100 p-3 rounded-lg border-2 border-red-400">
+                        <p className="text-xs font-semibold text-gray-600">TIPO DE SANGRE</p>
+                        <p className="text-2xl font-bold text-red-700">{personData.tipoSangre || 'No especificado'}</p>
+                      </div>
+                      
+                      {personData.alergias && (
+                        <div className="bg-yellow-100 p-3 rounded-lg border-2 border-yellow-400">
+                          <p className="text-xs font-semibold text-gray-600">ALERGIAS</p>
+                          <p className="text-sm font-bold text-gray-900">{personData.alergias}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Contacto de Emergencia */}
+                  <div className="border-t-4 border-red-300 pt-4">
+                    <h3 className="text-lg font-bold text-red-700 mb-3 flex items-center gap-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                      </svg>
+                      CONTACTO DE EMERGENCIA
+                    </h3>
+                    <div className="bg-red-50 p-4 rounded-lg border-2 border-red-300 space-y-2">
+                      <div>
+                        <p className="text-sm font-semibold text-gray-600">Nombre</p>
+                        <p className="text-lg font-bold text-gray-900">{personData.nombreContactoEmergencia}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-gray-600">Teléfono</p>
+                        <a href={`tel:${personData.telefonoEmergencia}`} className="text-2xl font-bold text-red-600">
+                          {personData.telefonoEmergencia}
+                        </a>
+                      </div>
+                      {personData.direccionEmergencia && (
+                        <div>
+                          <p className="text-sm font-semibold text-gray-600">Dirección</p>
+                          <p className="text-gray-900">{personData.direccionEmergencia}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Observaciones */}
+                  {personData.observaciones && (
+                    <div className="bg-orange-50 p-4 rounded-lg border-2 border-orange-300">
+                      <p className="text-sm font-semibold text-gray-600 mb-1">OBSERVACIONES MÉDICAS</p>
+                      <p className="text-gray-900 font-medium">{personData.observaciones}</p>
+                    </div>
+                  )}
+
+                  {/* Datos Adicionales */}
+                  <div className="border-t pt-4 mt-4">
+                    <p className="text-xs font-semibold text-gray-500 mb-2">DATOS ADICIONALES</p>
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div className="bg-gray-50 p-2 rounded">
+                        <p className="text-xs text-gray-500">Nickname</p>
+                        <p className="font-semibold text-gray-700">{personData.nickname}</p>
+                      </div>
+                      <div className="bg-gray-50 p-2 rounded">
+                        <p className="text-xs text-gray-500">ID</p>
+                        <p className="font-semibold text-gray-700">{personData.id}</p>
+                      </div>
+                      <div className="bg-gray-50 p-2 rounded">
+                        <p className="text-xs text-gray-500">Email</p>
+                        <p className="font-semibold text-gray-700 text-xs break-all">{personData.email}</p>
+                      </div>
+                      <div className="bg-gray-50 p-2 rounded">
+                        <p className="text-xs text-gray-500">Teléfono Personal</p>
+                        <p className="font-semibold text-gray-700">{personData.telefono}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Botón */}
+                  <button
+                    onClick={resetSOS}
+                    className="w-full bg-red-600 text-white py-4 rounded-lg font-bold text-lg hover:bg-red-700 transition mt-4"
+                  >
+                    Buscar Otro
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      if (scanning) {
+        return (
+          <div className="flex-1 bg-black flex flex-col">
+            <div className="flex-1 relative overflow-hidden">
+              <video
+                ref={videoRef}
+                className="w-full h-full object-cover"
+                playsInline
+                autoPlay
+                muted
+                style={{ transform: 'scaleX(1)' }}
+              />
+              <canvas 
+                ref={canvasRef} 
+                style={{ display: 'none' }} 
+              />
+              
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="w-64 h-64 border-4 border-red-500 rounded-lg opacity-75"></div>
+              </div>
+
+              <button
+                onClick={() => { stopCamera(); onBack(); }}
+                className="absolute top-4 right-4 bg-red-600 text-white p-3 rounded-full shadow-lg hover:bg-red-700 transition z-10"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+
+              <div className="absolute bottom-8 left-0 right-0 text-center z-10">
+                <p className="text-white text-xl font-bold bg-red-600 bg-opacity-75 py-3 px-6 rounded-full inline-block">
+                  🚨 ESCANEA EL CÓDIGO QR DE EMERGENCIA
+                </p>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      return (
+        <div className="flex-1 bg-gradient-to-br from-red-50 to-orange-50 flex items-center justify-center p-4">
+          <div className="max-w-md w-full">
+            <div className="bg-white rounded-2xl shadow-xl p-8 text-center border-4 border-red-600">
+              <div className="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <AlertIcon />
+              </div>
+              
+              <h1 className="text-3xl font-bold text-gray-900 mb-3">
+                Modo SOS
+              </h1>
+              <p className="text-gray-600 mb-8">
+                Escanea el código QR del ciclista para acceder a su información de emergencia
+              </p>
+
+              <button
+                onClick={startCamera}
+                className="w-full bg-red-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-red-700 transition shadow-lg flex items-center justify-center gap-3 mb-4"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                  <circle cx="12" cy="13" r="4"></circle>
+                </svg>
+                Escanear QR
+              </button>
+
+              <button
+                onClick={onBack}
+                className="w-full bg-gray-500 text-white py-3 rounded-xl font-semibold hover:bg-gray-600 transition"
+              >
+                Cancelar
+              </button>
+
+              {error && (
+                <div className="mt-6 p-4 bg-red-50 border-2 border-red-300 rounded-lg">
+                  <p className="text-red-700 font-semibold">{error}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    };
 
     // Componente de Generar QR
     const QRCodeScreen = ({ onBack }) => {
@@ -860,7 +1258,7 @@
               >
                 <div className="flex flex-col items-center gap-2">
                   <UserPlusIcon />
-                  <span className="text-lg font-bold">Registrar</span>
+                  <span className="text-lg font-bold">Equipo</span>
                 </div>
               </button>
 
@@ -870,13 +1268,13 @@
               >
                 <div className="flex flex-col items-center gap-2">
                   <QrCodeIcon />
-                  <span className="text-lg font-bold">Generar Código QR</span>
+                  <span className="text-lg font-bold">QR Code</span>
                 </div>
               </button>
             </div>
 
             <button
-              onClick={() => alert('Funcionalidad SOS próximamente')}
+              onClick={() => setCurrentScreen('sos')}
               className="pulse-red bg-red-500 hover:bg-red-600 text-white rounded-2xl p-8 shadow-2xl transform transition hover:scale-105 active:scale-95"
             >
               <div className="flex flex-col items-center gap-3">
@@ -901,8 +1299,9 @@
       );
 
       const getSubtitle = () => {
-        if (currentScreen === 'register') return 'Mobile App - Registrar';
-        if (currentScreen === 'qrcode') return 'Mobile App - Generar QR';
+        if (currentScreen === 'register') return 'Mobile App - Equipo';
+        if (currentScreen === 'qrcode') return 'Mobile App - QR Code';
+        if (currentScreen === 'sos') return 'Mobile App - SOS';
         if (currentScreen === 'settings') return 'Mobile App - Configuración';
         return 'Mobile App';
       };
@@ -912,12 +1311,13 @@
           <div className="bg-white text-black py-6 px-4 text-center border-b-2 border-gray-200 relative">
             <h1 className="text-2xl font-bold">GALLXS - CYCLING CLUB</h1>
             <p className="text-sm font-bold text-gray-700">{getSubtitle()}</p>
-            <span className="absolute bottom-2 right-4 text-xs text-gray-400 font-mono">Beta v1.005</span>
+            <span className="absolute bottom-2 right-4 text-xs text-gray-400 font-mono">Beta v1.006</span>
           </div>
 
           {currentScreen === 'home' && renderHome()}
           {currentScreen === 'register' && <RegisterScreen onBack={() => setCurrentScreen('home')} />}
           {currentScreen === 'qrcode' && <QRCodeScreen onBack={() => setCurrentScreen('home')} />}
+          {currentScreen === 'sos' && <SOSScreen onBack={() => setCurrentScreen('home')} />}
           {currentScreen === 'settings' && renderSettings()}
 
           <div className="bg-white border-t-2 border-gray-200 shadow-lg">
