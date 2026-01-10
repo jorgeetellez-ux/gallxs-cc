@@ -60,6 +60,7 @@
 
     const SHEET_ID = '1qs4urivhp8Huv1BasaMNHjZwe43-C2P_sDfwzXKYQMw';
     const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
+    const RUTAS_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?gid=2141318151&tqx=out:json`;
     const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx6vRyOD6a3Fx2vTHMTDVqfqmCFLJb129vj3xoPtxJct7upsGID0Om0-1c0Anm_b4ed/exec';
 
     // Iconos SVG
@@ -112,7 +113,29 @@
       </svg>
     );
 
-    // Componente SOS con Escáner QR
+    const Camera = () => (
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+        <circle cx="12" cy="13" r="4"></circle>
+      </svg>
+    );
+
+    const Search = () => (
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="11" cy="11" r="8"></circle>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+      </svg>
+    );
+
+    const MapPin = () => (
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+        <circle cx="12" cy="10" r="3"></circle>
+      </svg>
+    );
+
+    // Componente Check-In
+    const CheckInScreen = ({ onBack }) => {
     const SOSScreen = ({ onBack }) => {
       const [scanning, setScanning] = useState(true);
       const [personData, setPersonData] = useState(null);
@@ -1219,7 +1242,7 @@
         <div className="flex-1 flex flex-col">
           <div className="flex-1 bg-gradient-to-br from-gray-100 to-gray-200 p-6 flex flex-col justify-center gap-6">
             <button
-              onClick={() => alert('Funcionalidad de Check-In próximamente')}
+              onClick={() => setCurrentScreen('checkin')}
               className="pulse-green bg-green-500 hover:bg-green-600 text-white rounded-2xl p-8 shadow-2xl transform transition hover:scale-105 active:scale-95"
             >
               <div className="flex flex-col items-center gap-3">
@@ -1277,6 +1300,7 @@
       );
 
       const getSubtitle = () => {
+        if (currentScreen === 'checkin') return 'Mobile App - Check-In';
         if (currentScreen === 'register') return 'Mobile App - Equipo';
         if (currentScreen === 'qrcode') return 'Mobile App - QR Code';
         if (currentScreen === 'sos') return 'Mobile App - SOS';
@@ -1289,10 +1313,11 @@
           <div className="bg-white text-black py-6 px-4 text-center border-b-2 border-gray-200 relative">
             <h1 className="text-2xl font-bold">GALLXS - CYCLING CLUB</h1>
             <p className="text-sm font-bold text-gray-700">{getSubtitle()}</p>
-            <span className="absolute bottom-2 right-4 text-xs text-gray-400 font-mono">Beta v1.06.008</span>
+            <span className="absolute bottom-2 right-4 text-xs text-gray-400 font-mono">Beta v1.06.009</span>
           </div>
 
           {currentScreen === 'home' && renderHome()}
+          {currentScreen === 'checkin' && <CheckInScreen onBack={() => setCurrentScreen('home')} />}
           {currentScreen === 'register' && <RegisterScreen onBack={() => setCurrentScreen('home')} />}
           {currentScreen === 'qrcode' && <QRCodeScreen onBack={() => setCurrentScreen('home')} />}
           {currentScreen === 'sos' && <SOSScreen onBack={() => setCurrentScreen('home')} />}
