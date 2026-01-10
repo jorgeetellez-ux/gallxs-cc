@@ -114,7 +114,7 @@
 
     // Componente SOS con Escáner QR
     const SOSScreen = ({ onBack }) => {
-      const [scanning, setScanning] = useState(false);
+      const [scanning, setScanning] = useState(true);
       const [personData, setPersonData] = useState(null);
       const [error, setError] = useState('');
       const [loading, setLoading] = useState(false);
@@ -122,6 +122,13 @@
       const canvasRef = useRef(null);
       const streamRef = useRef(null);
       const scanIntervalRef = useRef(null);
+
+      useEffect(() => {
+        startCamera();
+        return () => {
+          stopCamera();
+        };
+      }, []);
 
       const startCamera = async () => {
         try {
@@ -295,9 +302,12 @@
         setPersonData(null);
         setError('');
         setLoading(false);
+        setScanning(true);
+        startCamera();
       };
 
       useEffect(() => {
+        startCamera();
         return () => {
           stopCamera();
         };
@@ -459,54 +469,20 @@
                 <p className="text-white text-xl font-bold bg-red-600 bg-opacity-75 py-3 px-6 rounded-full inline-block">
                   🚨 ESCANEA EL CÓDIGO QR DE EMERGENCIA
                 </p>
+                {error && (
+                  <div className="mt-4 mx-4">
+                    <p className="text-white text-sm bg-red-700 bg-opacity-90 py-2 px-4 rounded-lg inline-block">
+                      {error}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
         );
       }
 
-      return (
-        <div className="flex-1 bg-gradient-to-br from-red-50 to-orange-50 flex items-center justify-center p-4">
-          <div className="max-w-md w-full">
-            <div className="bg-white rounded-2xl shadow-xl p-8 text-center border-4 border-red-600">
-              <div className="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <AlertIcon />
-              </div>
-              
-              <h1 className="text-3xl font-bold text-gray-900 mb-3">
-                Modo SOS
-              </h1>
-              <p className="text-gray-600 mb-8">
-                Escanea el código QR del ciclista para acceder a su información de emergencia
-              </p>
-
-              <button
-                onClick={startCamera}
-                className="w-full bg-red-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-red-700 transition shadow-lg flex items-center justify-center gap-3 mb-4"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
-                  <circle cx="12" cy="13" r="4"></circle>
-                </svg>
-                Escanear QR
-              </button>
-
-              <button
-                onClick={onBack}
-                className="w-full bg-gray-500 text-white py-3 rounded-xl font-semibold hover:bg-gray-600 transition"
-              >
-                Cancelar
-              </button>
-
-              {error && (
-                <div className="mt-6 p-4 bg-red-50 border-2 border-red-300 rounded-lg">
-                  <p className="text-red-700 font-semibold">{error}</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      );
+      return null;
     };
 
     // Componente de Generar QR
@@ -1311,7 +1287,7 @@
           <div className="bg-white text-black py-6 px-4 text-center border-b-2 border-gray-200 relative">
             <h1 className="text-2xl font-bold">GALLXS - CYCLING CLUB</h1>
             <p className="text-sm font-bold text-gray-700">{getSubtitle()}</p>
-            <span className="absolute bottom-2 right-4 text-xs text-gray-400 font-mono">Beta v1.006</span>
+            <span className="absolute bottom-2 right-4 text-xs text-gray-400 font-mono">Beta v1.06.007</span>
           </div>
 
           {currentScreen === 'home' && renderHome()}
