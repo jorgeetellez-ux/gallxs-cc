@@ -4,11 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Gallxs CC - Aplicación móvil para el equipo de entrenamiento">
-  <meta name="theme-color" content="#000000">
+  <meta name="theme-color" content="#FF9800">
   <title>Gallxs CC - Mobile App</title>
   
   <!-- PWA Manifest -->
-  <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIkdhbGx4cyBDQyAtIE1vYmlsZSBBcHAiLAogICJzaG9ydF9uYW1lIjogIkdhbGx4cyBDQyIsCiAgImRlc2NyaXB0aW9uIjogIkFwbGljYWNpw7NuIG3Ds3ZpbCBwYXJhIGVsIGVxdWlwbyBkZSBlbnRyZW5hbWllbnRvIEdhbGx4cyIsCiAgInN0YXJ0X3VybCI6ICIuLyIsCiAgImRpc3BsYXkiOiAic3RhbmRhbG9uZSIsCiAgImJhY2tncm91bmRfY29sb3IiOiAiI2ZmZmZmZiIsCiAgInRoZW1lX2NvbG9yIjogIiMwMDAwMDAiLAogICJpY29ucyI6IFsKICAgIHsKICAgICAgInNyYyI6ICJkYXRhOmltYWdlL3N2Zyt4bWwsJTNDc3ZnJTIweG1sbnM9J2h0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnJyUyMHdpZHRoPScxOTInJTIwaGVpZ2h0PScxOTInJTNFJTNDcmVjdCUyMHdpZHRoPScxOTInJTIwaGVpZ2h0PScxOTInJTIwZmlsbD0nJTIzMDAwMDAwJy8lM0UlM0NjaXJjbGUlMjBjeD0nOTYnJTIwY3k9Jzk2JyUyMHI9JzgwJyUyMGZpbGw9JyUyM2ZmZmZmZicvJTNFJTNDL3N2ZyUzRSIsCiAgICAgICJzaXplcyI6ICIxOTJ4MTkyIiwKICAgICAgInR5cGUiOiAiaW1hZ2Uvc3ZnK3htbCIKICAgIH0KICBdCn0=">
+  <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIkdhbGx4cyBDQyAtIE1vYmlsZSBBcHAiLAogICJzaG9ydF9uYW1lIjogIkdhbGx4cyBDQyIsCiAgImRlc2NyaXB0aW9uIjogIkFwbGljYWNpw7NuIG3Ds3ZpbCBwYXJhIGVsIGVxdWlwbyBkZSBlbnRyZW5hbWllbnRvIEdhbGx4cyIsCiAgInN0YXJ0X3VybCI6ICIuLyIsCiAgImRpc3BsYXkiOiAic3RhbmRhbG9uZSIsCiAgImJhY2tncm91bmRfY29sb3IiOiAiI2ZmZmZmZiIsCiAgInRoZW1lX2NvbG9yIjogIiNGRjk4MDAiLAogICJpY29ucyI6IFsKICAgIHsKICAgICAgInNyYyI6ICJkYXRhOmltYWdlL3N2Zyt4bWwsJTNDc3ZnJTIweG1sbnM9J2h0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnJyUyMHdpZHRoPScxOTInJTIwaGVpZ2h0PScxOTInJTNFJTNDcmVjdCUyMHdpZHRoPScxOTInJTIwaGVpZ2h0PScxOTInJTIwZmlsbD0nJTIzRkY5ODAwJy8lM0UlM0N0ZXh0JTIweD0nOTYnJTIweT0nMTIwJyUyMGZvbnQtc2l6ZT0nODAnJTIwdGV4dC1hbmNob3I9J21pZGRsZSclMjBmaWxsPSclMjNmZmZmZmYnJTIwZm9udC13ZWlnaHQ9J2JvbGQnJTIwZm9udC1mYW1pbHk9J0FyaWFsJTJDc2Fucy1zZXJpZiclM0VHWCUzQy90ZXh0JTNFJTNDL3N2ZyUzRSIsCiAgICAgICJzaXplcyI6ICIxOTJ4MTkyIiwKICAgICAgInR5cGUiOiAiaW1hZ2Uvc3ZnK3htbCIKICAgIH0sCiAgICB7CiAgICAgICJzcmMiOiAiZGF0YTppbWFnZS9zdmcreG1sLCUzQ3N2ZyUyMHhtbG5zPSdodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyclMjB3aWR0aD0nNTEyJyUyMGhlaWdodD0nNTEyJyUzRSUzQ3JlY3QlMjB3aWR0aD0nNTEyJyUyMGhlaWdodD0nNTEyJyUyMGZpbGw9JyUyM0ZGOTgwMCcvJTNFJTNDdGV4dCUyMHg9JzI1NiclMjB5PSczMjAnJTIwZm9udC1zaXplPSclMjAyMTAnJTIwdGV4dC1hbmNob3I9J21pZGRsZSclMjBmaWxsPSclMjNmZmZmZmYnJTIwZm9udC13ZWlnaHQ9J2JvbGQnJTIwZm9udC1mYW1pbHk9J0FyaWFsJTJDc2Fucy1zZXJpZiclM0VHWCUzQy90ZXh0JTNFJTNDL3N2ZyUzRSIsCiAgICAgICJzaXplcyI6ICI1MTJ4NTEyIiwKICAgICAgInR5cGUiOiAiaW1hZ2Uvc3ZnK3htbCIKICAgIH0KICBdCn0=">
   
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -349,7 +349,9 @@
                     <div className="space-y-2">
                       <div className="bg-red-100 p-3 rounded-lg border-2 border-red-400">
                         <p className="text-xs font-semibold text-gray-600">TIPO DE SANGRE</p>
-                        <p className="text-2xl font-bold text-red-700">{personData.tipoSangre || 'No especificado'}</p>
+                        <p className="text-2xl font-bold text-red-700">
+                          {personData.tipoSangre === 'LO DESCONOZCO' ? 'n.d.' : (personData.tipoSangre || 'No especificado')}
+                        </p>
                       </div>
                       
                       {personData.alergias && (
@@ -1287,7 +1289,7 @@
           <div className="bg-white text-black py-6 px-4 text-center border-b-2 border-gray-200 relative">
             <h1 className="text-2xl font-bold">GALLXS - CYCLING CLUB</h1>
             <p className="text-sm font-bold text-gray-700">{getSubtitle()}</p>
-            <span className="absolute bottom-2 right-4 text-xs text-gray-400 font-mono">Beta v1.06.007</span>
+            <span className="absolute bottom-2 right-4 text-xs text-gray-400 font-mono">Beta v1.06.008</span>
           </div>
 
           {currentScreen === 'home' && renderHome()}
