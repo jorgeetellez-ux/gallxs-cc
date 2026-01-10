@@ -1212,6 +1212,551 @@
         return null;
       };
 
+      // Componente Check-In
+      const CheckInScreen = ({ onBack }) => {
+        const [rutas, setRutas] = useState([]);
+        const [allUsers, setAllUsers] = useState([]);
+        const [searchRuta, setSearchRuta] = useState('');
+        const [rutaSuggestions, setRutaSuggestions] = useState([]);
+        const [selectedRuta, setSelectedRuta] = useState(null);
+        const [participantes, setParticipantes] = useState([]);
+        const [searchParticipante, setSearchParticipante] = useState('');
+        const [participanteSuggestions, setParticipanteSuggestions] = useState([]);
+        const [scanning, setScanning] = useState(false);
+        const [location, setLocation] = useState(null);
+        const [loading, setLoading] = useState(false);
+        const [showSummary, setShowSummary] = useState(false);
+        const [summaryData, setSummaryData] = useState(null);
+        const videoRef = useRef(null);
+        const canvasRef = useRef(null);
+        const streamRef = useRef(null);
+        const scanIntervalRef = useRef(null);
+
+        useEffect(() => {
+          loadRutas();
+          loadUsers();
+          getLocation();
+        }, []);
+
+        const loadRutas = async () => {
+          try {
+            const response = await fetch(RUTAS_URL);
+            const text = await response.text();
+            const jsonString = text.match(/google\.visualization\.Query\.setResponse\((.*)\);/);
+            if (!jsonString) return;
+            
+            const json = JSON.parse(jsonString[1]);
+            const rows = json.table.rows;
+            
+            const rutasData = rows.map(row => ({
+              destino: row.c[0]?.v || '',
+              tipo: row.c[1]?.v || '',
+              nivel: row.c[2]?.v || '',
+              distancia: row.c[3]?.v || '',
+              puntoReunion: row.c[4]?.v || ''
+            })).filter(r => r.destino);
+            
+            setRutas(rutasData);
+          } catch (error) {
+            console.error('Error loading rutas:', error);
+          }
+        };
+
+        const loadUsers = async () => {
+          try {
+            const response = await fetch(SHEET_URL);
+            const text = await response.text();
+            const jsonString = text.match(/google\.visualization\.Query\.setResponse\((.*)\);/);
+            if (!jsonString) return;
+            
+            const json = JSON.parse(jsonString[1]);
+            const rows = json.table.rows;
+            
+            const users = rows.map(row => ({
+              email: row.c[0]?.v || '',
+              nombreCompleto: row.c[1]?.v || '',
+              nickname: row.c[2]?.v || '',
+              id: row.c[3]?.v || ''
+            })).filter(u => u.id);
+            
+            setAllUsers(users);
+          } catch (error) {
+            console.error('Error loading users:', error);
+          }
+        };
+
+        const getLocation = () => {
+          if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+              (position) => {
+                setLocation({
+                  lat: position.coords.latitude,
+                  lng: position.coords.longitude
+                });
+              },
+              (error) => {
+                console.error('Error getting location:', error);
+                setLocation({ lat: 0, lng: 0, error: 'No disponible' });
+              }
+            );
+          }
+        };
+
+        const handleRutaSearch = (value) => {
+          setSearchRuta(value);
+          if (value.length > 1) {
+            const filtered = rutas.filter(r => 
+              r.destino.toLowerCase().includes(value.toLowerCase())
+            );
+            setRutaSuggestions(filtered);
+          } else {
+            setRutaSuggestions([]);
+          }
+        };
+
+        const selectRuta = (ruta) => {
+          setSelectedRuta(ruta);
+          setSearchRuta('');
+          setRutaSuggestions([]);
+        };
+
+        const handleParticipanteSearch = (value) => {
+          setSearchParticipante(value);
+          if (value.length > 1) {
+            const filtered = allUsers.filter(u => 
+              u.nombreCompleto.toLowerCase().includes(value.toLowerCase()) ||
+              u.nickname.toLowerCase().includes(value.toLowerCase()) ||
+              u.email.toLowerCase().includes(value.toLowerCase()) ||
+              u.id.toLowerCase().includes(value.toLowerCase())
+            );
+            setParticipanteSuggestions(filtered);
+          } else {
+            setParticipanteSuggestions([]);
+          }
+        };
+
+        const addParticipante = (user) => {
+          if (!participantes.find(p => p.id === user.id)) {
+            setParticipantes([...participantes, user]);
+          }
+          setSearchParticipante('');
+          setParticipanteSuggestions([]);
+        };
+
+        const removeParticipante = (id) => {
+          setParticipantes(participantes.filter(p => p.id !== id));
+        };
+
+        const startScanner = async () => {
+          try {
+            setScanning(true);
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            const stream = await navigator.mediaDevices.getUserMedia({
+              video: { 
+                facingMode: 'environment',
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
+              }
+            });
+            
+            if (videoRef.current) {
+              videoRef.current.srcObject = stream;
+              streamRef.current = stream;
+              videoRef.current.setAttribute('playsinline', 'true');
+              videoRef.current.setAttribute('autoplay', 'true');
+              
+              videoRef.current.onloadedmetadata = async () => {
+                try {
+                  await videoRef.current.play();
+                  startQRScanning();
+                } catch (err) {
+                  console.error('Error playing video:', err);
+                  stopScanner();
+                }
+              };
+            }
+          } catch (err) {
+            console.error('Error starting camera:', err);
+            alert('No se pudo acceder a la cámara');
+            setScanning(false);
+          }
+        };
+
+        const stopScanner = () => {
+          if (streamRef.current) {
+            streamRef.current.getTracks().forEach(track => track.stop());
+            streamRef.current = null;
+          }
+          if (scanIntervalRef.current) {
+            clearInterval(scanIntervalRef.current);
+            scanIntervalRef.current = null;
+          }
+          setScanning(false);
+        };
+
+        const startQRScanning = () => {
+          if (typeof jsQR === 'undefined') {
+            alert('Error: librería de escaneo no disponible');
+            stopScanner();
+            return;
+          }
+          
+          scanIntervalRef.current = setInterval(() => {
+            scanQR();
+          }, 300);
+        };
+
+        const scanQR = () => {
+          if (!videoRef.current || !canvasRef.current) return;
+          if (typeof jsQR === 'undefined') return;
+
+          const video = videoRef.current;
+          const canvas = canvasRef.current;
+          const context = canvas.getContext('2d');
+
+          if (video.readyState === video.HAVE_ENOUGH_DATA) {
+            const width = video.videoWidth;
+            const height = video.videoHeight;
+            
+            if (width > 0 && height > 0) {
+              canvas.width = width;
+              canvas.height = height;
+              context.drawImage(video, 0, 0, width, height);
+              const imageData = context.getImageData(0, 0, width, height);
+              
+              try {
+                const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                  inversionAttempts: "attemptBoth",
+                });
+
+                if (code && code.data) {
+                  const id = code.data.trim();
+                  const user = allUsers.find(u => u.id === id);
+                  if (user) {
+                    addParticipante(user);
+                    stopScanner();
+                  }
+                }
+              } catch (err) {
+                console.error('Error scanning QR:', err);
+              }
+            }
+          }
+        };
+
+        const handleIniciarRodada = async () => {
+          if (!selectedRuta || participantes.length === 0) {
+            alert('Debes seleccionar una ruta y agregar al menos un participante');
+            return;
+          }
+
+          setLoading(true);
+
+          try {
+            const now = new Date();
+            const checkInData = {
+              action: 'saveCheckIn',
+              year: now.getFullYear(),
+              month: now.getMonth() + 1,
+              day: now.getDate(),
+              hora: now.toLocaleTimeString('es-MX', { hour12: false }),
+              destino: selectedRuta.destino,
+              puntoReunionReal: location ? `${location.lat}, ${location.lng}` : 'No disponible',
+              participantes: participantes.map(p => ({
+                id: p.id,
+                nombre: p.nombreCompleto
+              }))
+            };
+
+            const formData = new FormData();
+            formData.append('data', JSON.stringify(checkInData));
+
+            const response = await fetch(APPS_SCRIPT_URL, {
+              method: 'POST',
+              body: formData
+            });
+
+            const result = await response.json();
+            
+            if (result.success) {
+              setSummaryData({
+                destino: selectedRuta.destino,
+                distancia: selectedRuta.distancia,
+                hora: checkInData.hora,
+                totalParticipantes: participantes.length
+              });
+              setShowSummary(true);
+            } else {
+              throw new Error(result.error || 'Error desconocido');
+            }
+          } catch (error) {
+            console.error('Error:', error);
+            alert('Error al guardar el check-in: ' + error.message);
+          } finally {
+            setLoading(false);
+          }
+        };
+
+        if (showSummary && summaryData) {
+          return (
+            <div className="flex-1 bg-gradient-to-br from-green-50 to-emerald-50 flex items-center justify-center p-4">
+              <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center">
+                <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                  </svg>
+                </div>
+                
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">¡Rodada Iniciada!</h2>
+                
+                <div className="space-y-4 text-left mb-8">
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <p className="text-sm text-gray-600">Destino</p>
+                    <p className="text-lg font-bold text-gray-900">{summaryData.destino}</p>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <p className="text-sm text-gray-600">Distancia</p>
+                      <p className="text-lg font-bold text-green-600">{summaryData.distancia} km</p>
+                    </div>
+                    
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <p className="text-sm text-gray-600">Hora</p>
+                      <p className="text-lg font-bold text-gray-900">{summaryData.hora}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-green-50 p-4 rounded-lg border-2 border-green-200">
+                    <p className="text-sm text-gray-600">Participantes</p>
+                    <p className="text-2xl font-bold text-green-700">{summaryData.totalParticipantes}</p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={onBack}
+                  className="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition"
+                >
+                  Cerrar
+                </button>
+              </div>
+            </div>
+          );
+        }
+
+        if (scanning) {
+          return (
+            <div className="flex-1 bg-black flex flex-col">
+              <div className="flex-1 relative overflow-hidden">
+                <video
+                  ref={videoRef}
+                  className="w-full h-full object-cover"
+                  playsInline
+                  autoPlay
+                  muted
+                />
+                <canvas ref={canvasRef} style={{ display: 'none' }} />
+                
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="w-64 h-64 border-4 border-green-500 rounded-lg opacity-75"></div>
+                </div>
+
+                <button
+                  onClick={stopScanner}
+                  className="absolute top-4 right-4 bg-red-600 text-white p-3 rounded-full shadow-lg z-10"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                </button>
+
+                <div className="absolute bottom-8 left-0 right-0 text-center z-10">
+                  <p className="text-white text-lg font-bold bg-green-600 bg-opacity-75 py-2 px-4 rounded-full inline-block">
+                    Escanea el QR del participante
+                  </p>
+                </div>
+              </div>
+            </div>
+          );
+        }
+
+        return (
+          <div className="flex-1 bg-gradient-to-br from-green-50 to-emerald-50 p-4 overflow-y-auto">
+            <div className="max-w-2xl mx-auto space-y-6">
+              {!selectedRuta ? (
+                <div className="bg-white rounded-xl shadow-lg p-6">
+                  <h2 className="text-xl font-bold mb-4 text-gray-800">Seleccionar Ruta</h2>
+                  
+                  <input
+                    type="text"
+                    value={searchRuta}
+                    onChange={(e) => handleRutaSearch(e.target.value)}
+                    placeholder="Buscar destino..."
+                    className="w-full p-3 border-2 border-gray-300 rounded-lg mb-2 focus:border-green-500 focus:outline-none"
+                  />
+
+                  {rutaSuggestions.length > 0 && (
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg max-h-60 overflow-y-auto">
+                      {rutaSuggestions.map((ruta, idx) => (
+                        <div
+                          key={idx}
+                          onClick={() => selectRuta(ruta)}
+                          className="p-4 hover:bg-green-50 cursor-pointer border-b last:border-b-0"
+                        >
+                          <p className="font-bold text-gray-900">{ruta.destino}</p>
+                          <p className="text-sm text-gray-600">{ruta.tipo} • {ruta.nivel} • {ruta.distancia} km</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <button
+                    onClick={onBack}
+                    className="w-full mt-4 bg-gray-500 hover:bg-gray-600 text-white py-3 rounded-lg font-semibold"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div className="bg-white rounded-xl shadow-lg p-6">
+                    <h2 className="text-xl font-bold mb-4 text-gray-800">Datos de la Ruta</h2>
+                    
+                    <div className="space-y-3">
+                      <div className="bg-green-50 p-4 rounded-lg">
+                        <p className="text-sm font-semibold text-gray-600">Destino</p>
+                        <p className="text-xl font-bold text-gray-900">{selectedRuta.destino}</p>
+                      </div>
+                      
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="bg-gray-50 p-3 rounded-lg">
+                          <p className="text-xs text-gray-600">Tipo</p>
+                          <p className="font-semibold text-gray-900">{selectedRuta.tipo}</p>
+                        </div>
+                        <div className="bg-gray-50 p-3 rounded-lg">
+                          <p className="text-xs text-gray-600">Nivel</p>
+                          <p className="font-semibold text-gray-900">{selectedRuta.nivel}</p>
+                        </div>
+                        <div className="bg-gray-50 p-3 rounded-lg">
+                          <p className="text-xs text-gray-600">Distancia</p>
+                          <p className="font-semibold text-green-600">{selectedRuta.distancia} km</p>
+                        </div>
+                      </div>
+                      
+                      <div className="bg-blue-50 p-4 rounded-lg">
+                        <p className="text-sm font-semibold text-gray-600">Punto de Reunión</p>
+                        <p className="text-gray-900">{selectedRuta.puntoReunion}</p>
+                      </div>
+                      
+                      {location && (
+                        <div className="bg-orange-50 p-4 rounded-lg flex items-start gap-2">
+                          <MapPin />
+                          <div>
+                            <p className="text-sm font-semibold text-gray-600">Punto de Salida</p>
+                            <p className="text-xs text-gray-700">
+                              {location.error || `${location.lat.toFixed(6)}, ${location.lng.toFixed(6)}`}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="bg-white rounded-xl shadow-lg p-6">
+                    <h2 className="text-xl font-bold mb-4 text-gray-800">Participantes ({participantes.length})</h2>
+                    
+                    <div className="flex gap-2 mb-4">
+                      <button
+                        onClick={startScanner}
+                        className="flex-1 bg-green-500 hover:bg-green-600 text-white py-3 rounded-lg font-semibold flex items-center justify-center gap-2"
+                      >
+                        <Camera />
+                        Escanear QR
+                      </button>
+                      
+                      <button
+                        onClick={() => document.getElementById('search-input')?.focus()}
+                        className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-lg font-semibold flex items-center justify-center gap-2"
+                      >
+                        <Search />
+                        Buscar
+                      </button>
+                    </div>
+
+                    <input
+                      id="search-input"
+                      type="text"
+                      value={searchParticipante}
+                      onChange={(e) => handleParticipanteSearch(e.target.value)}
+                      placeholder="Buscar por nombre, email, ID o nickname..."
+                      className="w-full p-3 border-2 border-gray-300 rounded-lg mb-2 focus:border-blue-500 focus:outline-none"
+                    />
+
+                    {participanteSuggestions.length > 0 && (
+                      <div className="bg-gray-50 border border-gray-200 rounded-lg max-h-40 overflow-y-auto mb-4">
+                        {participanteSuggestions.map((user, idx) => (
+                          <div
+                            key={idx}
+                            onClick={() => addParticipante(user)}
+                            className="p-3 hover:bg-blue-50 cursor-pointer border-b last:border-b-0"
+                          >
+                            <p className="font-semibold text-gray-900">{user.nombreCompleto}</p>
+                            <p className="text-xs text-gray-600">@{user.nickname} • {user.id}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {participantes.length > 0 && (
+                      <div className="space-y-2 max-h-60 overflow-y-auto">
+                        {participantes.map((p, idx) => (
+                          <div key={idx} className="flex items-center justify-between bg-green-50 p-3 rounded-lg">
+                            <div>
+                              <p className="font-semibold text-gray-900">{p.nombreCompleto}</p>
+                              <p className="text-xs text-gray-600">@{p.nickname} • {p.id}</p>
+                            </div>
+                            <button
+                              onClick={() => removeParticipante(p.id)}
+                              className="text-red-500 hover:text-red-700 p-2"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                              </svg>
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex gap-3">
+                    <button
+                      onClick={handleIniciarRodada}
+                      disabled={loading || participantes.length === 0}
+                      className="flex-1 bg-green-600 hover:bg-green-700 text-white py-4 rounded-lg font-bold text-lg disabled:bg-gray-300 disabled:cursor-not-allowed"
+                    >
+                      {loading ? 'Guardando...' : 'Iniciar Rodada'}
+                    </button>
+                    
+                    <button
+                      onClick={onBack}
+                      disabled={loading}
+                      className="flex-1 bg-red-500 hover:bg-red-600 text-white py-4 rounded-lg font-bold text-lg"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        );
+      };
+
       const renderHome = () => (
         <div className="flex-1 flex flex-col">
           <div className="flex-1 bg-gradient-to-br from-gray-100 to-gray-200 p-6 flex flex-col justify-center gap-6">
@@ -1287,10 +1832,11 @@
           <div className="bg-white text-black py-6 px-4 text-center border-b-2 border-gray-200 relative">
             <h1 className="text-2xl font-bold">GALLXS - CYCLING CLUB</h1>
             <p className="text-sm font-bold text-gray-700">{getSubtitle()}</p>
-            <span className="absolute bottom-2 right-4 text-xs text-gray-400 font-mono">Beta v1.07.013</span>
+            <span className="absolute bottom-2 right-4 text-xs text-gray-400 font-mono">Beta v1.07.014</span>
           </div>
 
           {currentScreen === 'home' && renderHome()}
+          {currentScreen === 'checkin' && <CheckInScreen onBack={() => setCurrentScreen('home')} />}
           {currentScreen === 'register' && <RegisterScreen onBack={() => setCurrentScreen('home')} />}
           {currentScreen === 'qrcode' && <QRCodeScreen onBack={() => setCurrentScreen('home')} />}
           {currentScreen === 'sos' && <SOSScreen onBack={() => setCurrentScreen('home')} />}
