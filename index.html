@@ -137,6 +137,457 @@
     const GallxsApp = () => {
       const [currentScreen, setCurrentScreen] = useState('home');
 
+      // Componente de Registro
+      const RegisterScreen = ({ onBack }) => {
+        const [email, setEmail] = useState('');
+        const [suggestions, setSuggestions] = useState([]);
+        const [allUsers, setAllUsers] = useState([]);
+        const [formData, setFormData] = useState({
+          nombreCompleto: '',
+          nickname: '',
+          id: '',
+          telefono: '',
+          nombreContactoEmergencia: '',
+          telefonoEmergencia: '',
+          direccionEmergencia: '',
+          tipoSangre: '',
+          alergias: '',
+          observaciones: ''
+        });
+        const [isExistingUser, setIsExistingUser] = useState(false);
+        const [loading, setLoading] = useState(false);
+        const [showForm, setShowForm] = useState(false);
+
+        useEffect(() => {
+          loadUsers();
+        }, []);
+
+        const loadUsers = async () => {
+          try {
+            const response = await fetch(SHEET_URL);
+            const text = await response.text();
+            const jsonString = text.match(/google\.visualization\.Query\.setResponse\((.*)\);/);
+            if (!jsonString) return;
+            
+            const json = JSON.parse(jsonString[1]);
+            const rows = json.table.rows;
+            
+            const users = rows.map(row => ({
+              email: row.c[0]?.v || '',
+              nombreCompleto: row.c[1]?.v || '',
+              nickname: row.c[2]?.v || '',
+              id: row.c[3]?.v || '',
+              telefono: row.c[4]?.v || '',
+              nombreContactoEmergencia: row.c[5]?.v || '',
+              telefonoEmergencia: row.c[6]?.v || '',
+              direccionEmergencia: row.c[7]?.v || '',
+              tipoSangre: row.c[8]?.v || '',
+              alergias: row.c[9]?.v || '',
+              observaciones: row.c[10]?.v || ''
+            })).filter(u => u.email);
+            
+            setAllUsers(users);
+          } catch (error) {
+            console.error('Error loading users:', error);
+          }
+        };
+
+        const handleEmailChange = (value) => {
+          setEmail(value);
+          
+          if (value.length > 2) {
+            const filtered = allUsers.filter(user => 
+              user.email.toLowerCase().includes(value.toLowerCase())
+            );
+            setSuggestions(filtered);
+          } else {
+            setSuggestions([]);
+          }
+        };
+
+        const selectEmail = (user) => {
+          setEmail(user.email);
+          setFormData({
+            nombreCompleto: user.nombreCompleto,
+            nickname: user.nickname,
+            id: user.id,
+            telefono: user.telefono,
+            nombreContactoEmergencia: user.nombreContactoEmergencia,
+            telefonoEmergencia: user.telefonoEmergencia,
+            direccionEmergencia: user.direccionEmergencia,
+            tipoSangre: user.tipoSangre,
+            alergias: user.alergias,
+            observaciones: user.observaciones
+          });
+          setIsExistingUser(true);
+          setShowForm(true);
+          setSuggestions([]);
+        };
+
+        const handleContinue = () => {
+          const exists = allUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
+          
+          if (exists) {
+            selectEmail(exists);
+          } else {
+            let newId;
+            let idExists = true;
+            
+            while (idExists) {
+              newId = 'MX' + Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
+              idExists = allUsers.some(u => u.id === newId);
+            }
+            
+            setFormData({
+              nombreCompleto: '',
+              nickname: '',
+              id: newId,
+              telefono: '',
+              nombreContactoEmergencia: '',
+              telefonoEmergencia: '',
+              direccionEmergencia: '',
+              tipoSangre: '',
+              alergias: '',
+              observaciones: ''
+            });
+            setIsExistingUser(false);
+            setShowForm(true);
+          }
+        };
+
+        const formatPhone = (value) => {
+          const numbers = value.replace(/\D/g, '');
+          if (numbers.length <= 2) return numbers;
+          if (numbers.length <= 6) return `${numbers.slice(0, 2)}-${numbers.slice(2)}`;
+          return `${numbers.slice(0, 2)}-${numbers.slice(2, 6)}-${numbers.slice(6, 10)}`;
+        };
+
+        const handlePhoneChange = (field, value) => {
+          const formatted = formatPhone(value);
+          setFormData({ ...formData, [field]: formatted });
+        };
+
+        const handleSubmit = async () => {
+          setLoading(true);
+          
+          try {
+            const dataToSave = {
+              email: email,
+              nombreCompleto: formData.nombreCompleto,
+              nickname: formData.nickname,
+              id: formData.id,
+              telefono: formData.telefono,
+              nombreContactoEmergencia: formData.nombreContactoEmergencia,
+              telefonoEmergencia: formData.telefonoEmergencia,
+              direccionEmergencia: formData.direccionEmergencia,
+              tipoSangre: formData.tipoSangre,
+              alergias: formData.alergias,
+              observaciones: formData.observaciones
+            };
+
+            const formData2 = new FormData();
+            formData2.append('data', JSON.stringify(dataToSave));
+
+            const response = await fetch(APPS_SCRIPT_URL, {
+              method: 'POST',
+              body: formData2
+            });
+
+            const result = await response.json();
+            
+            if (result.success) {
+              alert(`✅ ${result.message}!\n\n📧 Email: ${email}\nID: ${formData.id}`);
+              setLoading(false);
+              onBack();
+            } else {
+              throw new Error(result.error || 'Error desconocido');
+            }
+          } catch (error) {
+            console.error('Error completo:', error);
+            alert('❌ Error al guardar: ' + error.message);
+            setLoading(false);
+          }
+        };
+
+        const handleDelete = async () => {
+          if (isExistingUser) {
+            const confirmDelete = confirm(`¿Estás seguro de eliminar el registro de ${formData.nombreCompleto}?\n\nEsta acción no se puede deshacer.`);
+            
+            if (!confirmDelete) return;
+            
+            setLoading(true);
+            
+            try {
+              const deleteData = {
+                action: 'delete',
+                email: email
+              };
+
+              const formData2 = new FormData();
+              formData2.append('data', JSON.stringify(deleteData));
+
+              const response = await fetch(APPS_SCRIPT_URL, {
+                method: 'POST',
+                body: formData2
+              });
+
+              const result = await response.json();
+              
+              if (result.success) {
+                alert('✅ Registro eliminado exitosamente de Google Sheets.');
+                setLoading(false);
+                onBack();
+              } else {
+                throw new Error(result.error || 'Error al eliminar');
+              }
+            } catch (error) {
+              console.error('Error:', error);
+              alert('❌ Error al eliminar: ' + error.message);
+              setLoading(false);
+            }
+          } else {
+            const confirmClear = confirm('¿Estás seguro de limpiar todos los campos del formulario?');
+            
+            if (!confirmClear) return;
+            
+            let newId;
+            let idExists = true;
+            
+            while (idExists) {
+              newId = 'MX' + Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
+              idExists = allUsers.some(u => u.id === newId);
+            }
+            
+            setFormData({
+              nombreCompleto: '',
+              nickname: '',
+              id: newId,
+              telefono: '',
+              nombreContactoEmergencia: '',
+              telefonoEmergencia: '',
+              direccionEmergencia: '',
+              tipoSangre: '',
+              alergias: '',
+              observaciones: ''
+            });
+          }
+        };
+
+        if (!showForm) {
+          return (
+            <div className="flex-1 bg-gradient-to-br from-gray-100 to-gray-200 p-6">
+              <div className="max-w-lg mx-auto">
+                <div className="bg-white rounded-xl shadow-lg p-6">
+                  <h2 className="text-xl font-bold mb-4 text-gray-800">Buscar por Email</h2>
+                  
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => handleEmailChange(e.target.value)}
+                    placeholder="Ingresa tu email"
+                    className="w-full p-3 border-2 border-gray-300 rounded-lg mb-2 focus:border-blue-500 focus:outline-none"
+                  />
+
+                  {suggestions.length > 0 && (
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg max-h-40 overflow-y-auto mb-4">
+                      {suggestions.map((user, idx) => (
+                        <div
+                          key={idx}
+                          onClick={() => selectEmail(user)}
+                          className="p-3 hover:bg-blue-50 cursor-pointer border-b last:border-b-0"
+                        >
+                          <p className="font-semibold text-gray-800">{user.email}</p>
+                          <p className="text-sm text-gray-600">{user.nombreCompleto}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <button
+                    onClick={handleContinue}
+                    disabled={!email}
+                    className="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-lg font-semibold disabled:bg-gray-300 disabled:cursor-not-allowed"
+                  >
+                    Continuar
+                  </button>
+
+                  <button
+                    onClick={onBack}
+                    className="w-full mt-3 bg-gray-500 hover:bg-gray-600 text-white py-3 rounded-lg font-semibold"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        }
+
+        return (
+          <div className="flex-1 bg-gradient-to-br from-gray-100 to-gray-200 p-6 overflow-y-auto">
+            <div className="max-w-2xl mx-auto">
+              <div className="bg-white rounded-xl shadow-lg p-6">
+                <h2 className="text-xl font-bold mb-4 text-gray-800">
+                  {isExistingUser ? 'Actualizar Datos' : 'Nuevo Registro'}
+                </h2>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-semibold mb-1">Email</label>
+                    <input
+                      type="email"
+                      value={email}
+                      disabled
+                      className="w-full p-3 border-2 border-gray-200 rounded-lg bg-gray-100"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold mb-1">ID</label>
+                    <input
+                      type="text"
+                      value={formData.id}
+                      disabled
+                      className="w-full p-3 border-2 border-gray-200 rounded-lg bg-gray-100"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold mb-1">Nombre Completo *</label>
+                    <input
+                      type="text"
+                      value={formData.nombreCompleto}
+                      onChange={(e) => setFormData({ ...formData, nombreCompleto: e.target.value })}
+                      className="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold mb-1">Nickname *</label>
+                    <input
+                      type="text"
+                      value={formData.nickname}
+                      onChange={(e) => setFormData({ ...formData, nickname: e.target.value })}
+                      className="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold mb-1">Teléfono (xx-xxxx-xxxx) *</label>
+                    <input
+                      type="text"
+                      value={formData.telefono}
+                      onChange={(e) => handlePhoneChange('telefono', e.target.value)}
+                      maxLength={12}
+                      placeholder="55-1234-5678"
+                      className="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold mb-1">Nombre Contacto Emergencia *</label>
+                    <input
+                      type="text"
+                      value={formData.nombreContactoEmergencia}
+                      onChange={(e) => setFormData({ ...formData, nombreContactoEmergencia: e.target.value })}
+                      className="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold mb-1">Teléfono Emergencia (xx-xxxx-xxxx) *</label>
+                    <input
+                      type="text"
+                      value={formData.telefonoEmergencia}
+                      onChange={(e) => handlePhoneChange('telefonoEmergencia', e.target.value)}
+                      maxLength={12}
+                      placeholder="55-1234-5678"
+                      className="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold mb-1">Dirección Emergencia</label>
+                    <textarea
+                      value={formData.direccionEmergencia}
+                      onChange={(e) => setFormData({ ...formData, direccionEmergencia: e.target.value })}
+                      rows="3"
+                      className="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold mb-1">Tipo de Sangre *</label>
+                    <select
+                      value={formData.tipoSangre}
+                      onChange={(e) => setFormData({ ...formData, tipoSangre: e.target.value })}
+                      className="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+                    >
+                      <option value="">Selecciona...</option>
+                      <option value="A +">A +</option>
+                      <option value="A -">A -</option>
+                      <option value="B +">B +</option>
+                      <option value="B -">B -</option>
+                      <option value="AB +">AB +</option>
+                      <option value="AB -">AB -</option>
+                      <option value="O +">O +</option>
+                      <option value="O -">O -</option>
+                      <option value="LO DESCONOZCO">LO DESCONOZCO</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold mb-1">Alergias</label>
+                    <textarea
+                      value={formData.alergias}
+                      onChange={(e) => setFormData({ ...formData, alergias: e.target.value })}
+                      rows="3"
+                      className="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold mb-1">Observaciones</label>
+                    <textarea
+                      value={formData.observaciones}
+                      onChange={(e) => setFormData({ ...formData, observaciones: e.target.value })}
+                      rows="3"
+                      className="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="flex gap-3 pt-4">
+                    <button
+                      onClick={handleSubmit}
+                      disabled={loading || !formData.nombreCompleto || !formData.nickname || !formData.telefono || !formData.tipoSangre}
+                      className="flex-1 bg-green-500 hover:bg-green-600 text-white py-3 rounded-lg font-semibold disabled:bg-gray-300 disabled:cursor-not-allowed"
+                    >
+                      {loading ? 'Guardando...' : 'OK'}
+                    </button>
+                    
+                    <button
+                      onClick={handleDelete}
+                      disabled={loading}
+                      className="flex-1 bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-lg font-semibold"
+                    >
+                      {isExistingUser ? 'Eliminar' : 'Limpiar'}
+                    </button>
+                    
+                    <button
+                      onClick={onBack}
+                      disabled={loading}
+                      className="flex-1 bg-red-500 hover:bg-red-600 text-white py-3 rounded-lg font-semibold"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      };
+
       const renderHome = () => (
         <div className="flex-1 flex flex-col">
           <div className="flex-1 bg-gradient-to-br from-gray-100 to-gray-200 p-6 flex flex-col justify-center gap-6">
@@ -212,10 +663,11 @@
           <div className="bg-white text-black py-6 px-4 text-center border-b-2 border-gray-200 relative">
             <h1 className="text-2xl font-bold">GALLXS - CYCLING CLUB</h1>
             <p className="text-sm font-bold text-gray-700">{getSubtitle()}</p>
-            <span className="absolute bottom-2 right-4 text-xs text-gray-400 font-mono">Beta v1.07.011</span>
+            <span className="absolute bottom-2 right-4 text-xs text-gray-400 font-mono">Beta v1.07.012</span>
           </div>
 
           {currentScreen === 'home' && renderHome()}
+          {currentScreen === 'register' && <RegisterScreen onBack={() => setCurrentScreen('home')} />}
           {currentScreen === 'settings' && renderSettings()}
 
           <div className="bg-white border-t-2 border-gray-200 shadow-lg">
