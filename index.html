@@ -588,6 +588,269 @@
         );
       };
 
+      // Componente de Generar QR
+      const QRCodeScreen = ({ onBack }) => {
+        const [searchTerm, setSearchTerm] = useState('');
+        const [suggestions, setSuggestions] = useState([]);
+        const [allUsers, setAllUsers] = useState([]);
+        const [selectedUser, setSelectedUser] = useState(null);
+        const [loading, setLoading] = useState(false);
+        const qrRef = useRef(null);
+
+        useEffect(() => {
+          loadUsers();
+        }, []);
+
+        const loadUsers = async () => {
+          setLoading(true);
+          try {
+            const response = await fetch(SHEET_URL);
+            const text = await response.text();
+            const jsonString = text.match(/google\.visualization\.Query\.setResponse\((.*)\);/);
+            if (!jsonString) return;
+            
+            const json = JSON.parse(jsonString[1]);
+            const rows = json.table.rows;
+            
+            const users = rows.map(row => ({
+              email: row.c[0]?.v || '',
+              nombreCompleto: row.c[1]?.v || '',
+              nickname: row.c[2]?.v || '',
+              id: row.c[3]?.v || '',
+              telefono: row.c[4]?.v || '',
+              nombreContactoEmergencia: row.c[5]?.v || '',
+              telefonoEmergencia: row.c[6]?.v || '',
+              direccionEmergencia: row.c[7]?.v || '',
+              tipoSangre: row.c[8]?.v || '',
+              alergias: row.c[9]?.v || '',
+              observaciones: row.c[10]?.v || ''
+            })).filter(u => u.email);
+            
+            setAllUsers(users);
+          } catch (error) {
+            console.error('Error loading users:', error);
+          } finally {
+            setLoading(false);
+          }
+        };
+
+        const handleSearchChange = (value) => {
+          setSearchTerm(value);
+          
+          if (value.length > 1) {
+            const filtered = allUsers.filter(user => 
+              user.email.toLowerCase().includes(value.toLowerCase()) ||
+              user.nombreCompleto.toLowerCase().includes(value.toLowerCase()) ||
+              user.nickname.toLowerCase().includes(value.toLowerCase()) ||
+              user.id.toLowerCase().includes(value.toLowerCase())
+            );
+            setSuggestions(filtered);
+          } else {
+            setSuggestions([]);
+          }
+        };
+
+        const selectUser = (user) => {
+          setSelectedUser(user);
+          setSearchTerm('');
+          setSuggestions([]);
+          
+          setTimeout(() => {
+            generateQR(user.id);
+          }, 100);
+        };
+
+        const generateQR = (id) => {
+          if (qrRef.current) {
+            qrRef.current.innerHTML = '';
+            new QRCode(qrRef.current, {
+              text: id,
+              width: 200,
+              height: 200,
+              colorDark: "#000000",
+              colorLight: "#ffffff",
+              correctLevel: QRCode.CorrectLevel.H
+            });
+          }
+        };
+
+        const resetSearch = () => {
+          setSelectedUser(null);
+          setSearchTerm('');
+          setSuggestions([]);
+        };
+
+        if (selectedUser) {
+          return (
+            <div className="flex-1 bg-gradient-to-br from-gray-100 to-gray-200 p-6 overflow-y-auto">
+              <div className="max-w-2xl mx-auto">
+                <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+                  <div className="bg-purple-600 text-white p-6">
+                    <div className="flex items-center justify-center gap-3">
+                      <QrCodeIcon />
+                      <h2 className="text-2xl font-bold">Código QR Generado</h2>
+                    </div>
+                  </div>
+
+                  <div className="p-6 space-y-6">
+                    <div className="flex justify-center bg-gray-50 p-6 rounded-lg">
+                      <div ref={qrRef}></div>
+                    </div>
+
+                    <div className="border-t pt-4">
+                      <h3 className="text-xl font-bold text-gray-900 mb-4">Información del Ciclista</h3>
+                      
+                      <div className="grid gap-4">
+                        <div className="bg-blue-50 p-4 rounded-lg">
+                          <p className="text-sm font-semibold text-gray-600">ID</p>
+                          <p className="text-lg font-bold text-gray-900">{selectedUser.id}</p>
+                        </div>
+
+                        <div className="bg-gray-50 p-4 rounded-lg">
+                          <p className="text-sm font-semibold text-gray-600">Nombre Completo</p>
+                          <p className="text-lg font-bold text-gray-900">{selectedUser.nombreCompleto}</p>
+                        </div>
+
+                        <div className="bg-gray-50 p-4 rounded-lg">
+                          <p className="text-sm font-semibold text-gray-600">Nickname</p>
+                          <p className="text-lg text-gray-900">{selectedUser.nickname}</p>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="bg-gray-50 p-4 rounded-lg">
+                            <p className="text-sm font-semibold text-gray-600">Email</p>
+                            <p className="text-sm text-gray-900 break-all">{selectedUser.email}</p>
+                          </div>
+
+                          <div className="bg-gray-50 p-4 rounded-lg">
+                            <p className="text-sm font-semibold text-gray-600">Teléfono</p>
+                            <p className="text-sm text-gray-900">{selectedUser.telefono}</p>
+                          </div>
+                        </div>
+
+                        {selectedUser.tipoSangre && (
+                          <div className="bg-red-50 p-4 rounded-lg border-2 border-red-200">
+                            <p className="text-sm font-semibold text-gray-600">Tipo de Sangre</p>
+                            <p className="text-2xl font-bold text-red-600">{selectedUser.tipoSangre}</p>
+                          </div>
+                        )}
+
+                        <div className="border-t-2 border-purple-200 pt-4 mt-2">
+                          <h4 className="text-lg font-bold text-purple-700 mb-3">Contacto de Emergencia</h4>
+                          <div className="bg-purple-50 p-4 rounded-lg space-y-2">
+                            <div>
+                              <p className="text-sm font-semibold text-gray-600">Nombre</p>
+                              <p className="text-gray-900">{selectedUser.nombreContactoEmergencia}</p>
+                            </div>
+                            <div>
+                              <p className="text-sm font-semibold text-gray-600">Teléfono</p>
+                              <p className="text-lg font-bold text-purple-700">{selectedUser.telefonoEmergencia}</p>
+                            </div>
+                            {selectedUser.direccionEmergencia && (
+                              <div>
+                                <p className="text-sm font-semibold text-gray-600">Dirección</p>
+                                <p className="text-gray-900">{selectedUser.direccionEmergencia}</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {selectedUser.alergias && (
+                          <div className="bg-yellow-50 p-4 rounded-lg border-2 border-yellow-200">
+                            <p className="text-sm font-semibold text-gray-600">Alergias</p>
+                            <p className="text-gray-900">{selectedUser.alergias}</p>
+                          </div>
+                        )}
+
+                        {selectedUser.observaciones && (
+                          <div className="bg-gray-50 p-4 rounded-lg">
+                            <p className="text-sm font-semibold text-gray-600">Observaciones</p>
+                            <p className="text-gray-900">{selectedUser.observaciones}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex gap-3 pt-4">
+                      <button
+                        onClick={resetSearch}
+                        className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-lg font-semibold"
+                      >
+                        Buscar Otro
+                      </button>
+                      
+                      <button
+                        onClick={onBack}
+                        className="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-3 rounded-lg font-semibold"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        }
+
+        return (
+          <div className="flex-1 bg-gradient-to-br from-gray-100 to-gray-200 p-6">
+            <div className="max-w-lg mx-auto">
+              <div className="bg-white rounded-xl shadow-lg p-6">
+                <h2 className="text-xl font-bold mb-4 text-gray-800">Buscar Ciclista</h2>
+                <p className="text-sm text-gray-600 mb-4">Busca por nombre, nickname, email o ID</p>
+                
+                {loading ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-purple-600 mx-auto"></div>
+                    <p className="text-gray-600 mt-4">Cargando datos...</p>
+                  </div>
+                ) : (
+                  <>
+                    <input
+                      type="text"
+                      value={searchTerm}
+                      onChange={(e) => handleSearchChange(e.target.value)}
+                      placeholder="Escribe para buscar..."
+                      className="w-full p-3 border-2 border-gray-300 rounded-lg mb-2 focus:border-purple-500 focus:outline-none"
+                    />
+
+                    {suggestions.length > 0 && (
+                      <div className="bg-gray-50 border border-gray-200 rounded-lg max-h-96 overflow-y-auto">
+                        {suggestions.map((user, idx) => (
+                          <div
+                            key={idx}
+                            onClick={() => selectUser(user)}
+                            className="p-4 hover:bg-purple-50 cursor-pointer border-b last:border-b-0"
+                          >
+                            <p className="font-bold text-gray-900">{user.nombreCompleto}</p>
+                            <p className="text-sm text-gray-600">@{user.nickname}</p>
+                            <p className="text-xs text-gray-500">{user.email} • ID: {user.id}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {searchTerm && suggestions.length === 0 && (
+                      <div className="text-center py-8 text-gray-500">
+                        No se encontraron resultados
+                      </div>
+                    )}
+                  </>
+                )}
+
+                <button
+                  onClick={onBack}
+                  className="w-full mt-4 bg-gray-500 hover:bg-gray-600 text-white py-3 rounded-lg font-semibold"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      };
+
       const renderHome = () => (
         <div className="flex-1 flex flex-col">
           <div className="flex-1 bg-gradient-to-br from-gray-100 to-gray-200 p-6 flex flex-col justify-center gap-6">
@@ -663,11 +926,12 @@
           <div className="bg-white text-black py-6 px-4 text-center border-b-2 border-gray-200 relative">
             <h1 className="text-2xl font-bold">GALLXS - CYCLING CLUB</h1>
             <p className="text-sm font-bold text-gray-700">{getSubtitle()}</p>
-            <span className="absolute bottom-2 right-4 text-xs text-gray-400 font-mono">Beta v1.07.012</span>
+            <span className="absolute bottom-2 right-4 text-xs text-gray-400 font-mono">Beta v1.07.013</span>
           </div>
 
           {currentScreen === 'home' && renderHome()}
           {currentScreen === 'register' && <RegisterScreen onBack={() => setCurrentScreen('home')} />}
+          {currentScreen === 'qrcode' && <QRCodeScreen onBack={() => setCurrentScreen('home')} />}
           {currentScreen === 'settings' && renderSettings()}
 
           <div className="bg-white border-t-2 border-gray-200 shadow-lg">
