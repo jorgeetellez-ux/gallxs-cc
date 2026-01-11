@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="es">
 <head>
   <meta charset="UTF-8">
@@ -6,17 +7,23 @@
   <meta name="description" content="Gallxs CC - Aplicación móvil para el equipo de entrenamiento">
   <meta name="theme-color" content="#FF9800">
   <title>Gallxs CC - Mobile App</title>
-  
+
   <!-- PWA Manifest -->
+
   <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIkdhbGx4cyBDQyAtIE1vYmlsZSBBcHAiLAogICJzaG9ydF9uYW1lIjogIkdhbGx4cyBDQyIsCiAgImRlc2NyaXB0aW9uIjogIkFwbGljYWNpw7NuIG3Ds3ZpbCBwYXJhIGVsIGVxdWlwbyBkZSBlbnRyZW5hbWllbnRvIEdhbGx4cyIsCiAgInN0YXJ0X3VybCI6ICIuLyIsCiAgImRpc3BsYXkiOiAic3RhbmRhbG9uZSIsCiAgImJhY2tncm91bmRfY29sb3IiOiAiI2ZmZmZmZiIsCiAgInRoZW1lX2NvbG9yIjogIiNGRjk4MDAiLAogICJpY29ucyI6IFsKICAgIHsKICAgICAgInNyYyI6ICJkYXRhOmltYWdlL3N2Zyt4bWwsJTNDc3ZnJTIweG1sbnM9J2h0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnJyUyMHdpZHRoPScxOTInJTIwaGVpZ2h0PScxOTInJTNFJTNDcmVjdCUyMHdpZHRoPScxOTInJTIwaGVpZ2h0PScxOTInJTIwZmlsbD0nJTIzRkY5ODAwJy8lM0UlM0N0ZXh0JTIweD0nOTYnJTIweT0nMTIwJyUyMGZvbnQtc2l6ZT0nODAnJTIwdGV4dC1hbmNob3I9J21pZGRsZSclMjBmaWxsPSclMjNmZmZmZmYnJTIwZm9udC13ZWlnaHQ9J2JvbGQnJTIwZm9udC1mYW1pbHk9J0FyaWFsJTJDc2Fucy1zZXJpZiclM0VHWCUzQy90ZXh0JTNFJTNDL3N2ZyUzRSIsCiAgICAgICJzaXplcyI6ICIxOTJ4MTkyIiwKICAgICAgInR5cGUiOiAiaW1hZ2Uvc3ZnK3htbCIKICAgIH0sCiAgICB7CiAgICAgICJzcmMiOiAiZGF0YTppbWFnZS9zdmcreG1sLCUzQ3N2ZyUyMHhtbG5zPSdodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyclMjB3aWR0aD0nNTEyJyUyMGhlaWdodD0nNTEyJyUzRSUzQ3JlY3QlMjB3aWR0aD0nNTEyJyUyMGhlaWdodD0nNTEyJyUyMGZpbGw9JyUyM0ZGOTgwMCcvJTNFJTNDdGV4dCUyMHg9JzI1NiclMjB5PSczMjAnJTIwZm9udC1zaXplPSclMjAyMTAnJTIwdGV4dC1hbmNob3I9J21pZGRsZSclMjBmaWxsPSclMjNmZmZmZmYnJTIwZm9udC13ZWlnaHQ9J2JvbGQnJTIwZm9udC1mYW1pbHk9J0FyaWFsJTJDc2Fucy1zZXJpZiclM0VHWCUzQy90ZXh0JTNFJTNDL3N2ZyUzRSIsCiAgICAgICJzaXplcyI6ICI1MTJ4NTEyIiwKICAgICAgInR5cGUiOiAiaW1hZ2Uvc3ZnK3htbCIKICAgIH0KICBdCn0=">
-  
+
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
   <script src="https://cdn.tailwindcss.com"></script>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
   <script src="https://unpkg.com/jsqr@1.4.0/dist/jsQR.js"></script>
-  
+
   <style>
     body { 
       margin: 0; 
@@ -51,6 +58,7 @@
       animation: pulse-red 2s infinite;
     }
   </style>
+
 </head>
 <body>
   <div id="root"></div>
@@ -61,6 +69,7 @@
     const SHEET_ID = '1qs4urivhp8Huv1BasaMNHjZwe43-C2P_sDfwzXKYQMw';
     const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
     const RUTAS_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?gid=2141318151&tqx=out:json`;
+    const RODADAS_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?gid=724012232&tqx=out:json`;
     const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx6vRyOD6a3Fx2vTHMTDVqfqmCFLJb129vj3xoPtxJct7upsGID0Om0-1c0Anm_b4ed/exec';
 
     // Iconos SVG
@@ -113,6 +122,14 @@
       </svg>
     );
 
+    const BarChart = () => (
+      <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="12" y1="20" x2="12" y2="10"></line>
+        <line x1="18" y1="20" x2="18" y2="4"></line>
+        <line x1="6" y1="20" x2="6" y2="16"></line>
+      </svg>
+    );
+
     const Camera = () => (
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
@@ -136,6 +153,292 @@
 
     const GallxsApp = () => {
       const [currentScreen, setCurrentScreen] = useState('home');
+
+      // Componente Dashboard
+      const DashboardScreen = ({ onBack }) => {
+        const [stats, setStats] = useState(null);
+        const [loading, setLoading] = useState(true);
+        const [rutas, setRutas] = useState([]);
+
+        useEffect(() => {
+          loadDashboardData();
+        }, []);
+
+        const loadDashboardData = async () => {
+          try {
+            // Cargar rutas para obtener distancias
+            const rutasResponse = await fetch(RUTAS_URL);
+            const rutasText = await rutasResponse.text();
+            const rutasJsonString = rutasText.match(/google\.visualization\.Query\.setResponse\((.*)\);/);
+            
+            if (rutasJsonString) {
+              const rutasJson = JSON.parse(rutasJsonString[1]);
+              const rutasRows = rutasJson.table.rows;
+              
+              const rutasMap = {};
+              rutasRows.forEach(row => {
+                const destino = row.c[0]?.v || '';
+                const distancia = parseFloat(row.c[3]?.v) || 0;
+                if (destino) {
+                  rutasMap[destino] = distancia;
+                }
+              });
+              
+              setRutas(rutasMap);
+            }
+
+            // Cargar datos de rodadas
+            const rodadasResponse = await fetch(RODADAS_URL);
+            const rodadasText = await rodadasResponse.text();
+            const rodadasJsonString = rodadasText.match(/google\.visualization\.Query\.setResponse\((.*)\);/);
+            
+            if (!rodadasJsonString) {
+              setStats({ empty: true });
+              setLoading(false);
+              return;
+            }
+            
+            const rodadasJson = JSON.parse(rodadasJsonString[1]);
+            const rodadasRows = rodadasJson.table.rows;
+
+            if (rodadasRows.length === 0) {
+              setStats({ empty: true });
+              setLoading(false);
+              return;
+            }
+
+            const currentYear = new Date().getFullYear();
+            const destinosCount = {};
+            const horasCount = {};
+            const ciclistasCount = {};
+            let totalKm = 0;
+
+            rodadasRows.forEach(row => {
+              const year = row.c[0]?.v;
+              const hora = row.c[3]?.v || '';
+              const destino = row.c[4]?.v || '';
+              const idParticipante = row.c[6]?.v || '';
+              const nombreParticipante = row.c[7]?.v || '';
+
+              // Solo datos del año actual
+              if (year === currentYear) {
+                // Contar destinos
+                if (destino) {
+                  destinosCount[destino] = (destinosCount[destino] || 0) + 1;
+                  
+                  // Sumar kilómetros
+                  if (rutasMap[destino]) {
+                    totalKm += rutasMap[destino];
+                  }
+                }
+
+                // Contar horas
+                if (hora) {
+                  const hour = hora.split(':')[0];
+                  horasCount[hour] = (horasCount[hour] || 0) + 1;
+                }
+
+                // Contar participaciones
+                if (idParticipante && nombreParticipante) {
+                  if (!ciclistasCount[idParticipante]) {
+                    ciclistasCount[idParticipante] = {
+                      nombre: nombreParticipante,
+                      count: 0
+                    };
+                  }
+                  ciclistasCount[idParticipante].count += 1;
+                }
+              }
+            });
+
+            // Top destinos
+            const topDestinos = Object.entries(destinosCount)
+              .sort((a, b) => b[1] - a[1])
+              .slice(0, 5)
+              .map(([destino, count]) => ({ destino, count }));
+
+            // Horas más comunes
+            const topHoras = Object.entries(horasCount)
+              .sort((a, b) => b[1] - a[1])
+              .slice(0, 3)
+              .map(([hora, count]) => ({ hora: `${hora}:00`, count }));
+
+            // Top ciclistas
+            const topCiclistas = Object.entries(ciclistasCount)
+              .sort((a, b) => b[1].count - a[1].count)
+              .slice(0, 10)
+              .map(([id, data]) => ({ id, nombre: data.nombre, count: data.count }));
+
+            setStats({
+              totalKm: totalKm.toFixed(2),
+              topDestinos,
+              topHoras,
+              topCiclistas,
+              totalRodadas: Object.values(destinosCount).reduce((a, b) => a + b, 0)
+            });
+
+          } catch (error) {
+            console.error('Error loading dashboard:', error);
+            setStats({ error: true });
+          } finally {
+            setLoading(false);
+          }
+        };
+
+        if (loading) {
+          return (
+            <div className="flex-1 bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center p-4">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
+                <p className="text-gray-700 font-medium">Cargando estadísticas...</p>
+              </div>
+            </div>
+          );
+        }
+
+        if (stats?.empty) {
+          return (
+            <div className="flex-1 bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center p-4">
+              <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center">
+                <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <BarChart />
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-4">Sin Datos</h2>
+                <p className="text-gray-600 mb-6">
+                  Aún no hay rodadas registradas en el sistema. Inicia tu primera rodada con Check-In.
+                </p>
+                <button
+                  onClick={onBack}
+                  className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition"
+                >
+                  Volver
+                </button>
+              </div>
+            </div>
+          );
+        }
+
+        if (stats?.error) {
+          return (
+            <div className="flex-1 bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center p-4">
+              <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center">
+                <h2 className="text-2xl font-bold text-red-600 mb-4">Error</h2>
+                <p className="text-gray-600 mb-6">
+                  No se pudieron cargar las estadísticas. Verifica tu conexión.
+                </p>
+                <button
+                  onClick={onBack}
+                  className="w-full bg-gray-600 text-white py-3 rounded-lg font-semibold hover:bg-gray-700 transition"
+                >
+                  Volver
+                </button>
+              </div>
+            </div>
+          );
+        }
+
+        return (
+          <div className="flex-1 bg-gradient-to-br from-blue-50 to-indigo-50 p-4 overflow-y-auto">
+            <div className="max-w-4xl mx-auto space-y-6">
+              {/* Header */}
+              <div className="bg-white rounded-xl shadow-lg p-6">
+                <div className="flex items-center gap-3 mb-2">
+                  <BarChart />
+                  <h1 className="text-2xl font-bold text-gray-900">Dashboard {new Date().getFullYear()}</h1>
+                </div>
+                <p className="text-gray-600">Estadísticas del equipo Gallxs CC</p>
+              </div>
+
+              {/* Resumen General */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl shadow-lg p-6 text-white">
+                  <p className="text-sm opacity-90 mb-1">Kilómetros Recorridos</p>
+                  <p className="text-4xl font-bold">{stats.totalKm}</p>
+                  <p className="text-xs opacity-75 mt-1">km en {new Date().getFullYear()}</p>
+                </div>
+
+                <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg p-6 text-white">
+                  <p className="text-sm opacity-90 mb-1">Total Rodadas</p>
+                  <p className="text-4xl font-bold">{stats.totalRodadas}</p>
+                  <p className="text-xs opacity-75 mt-1">este año</p>
+                </div>
+              </div>
+
+              {/* Lugares Más Visitados */}
+              <div className="bg-white rounded-xl shadow-lg p-6">
+                <h2 className="text-xl font-bold text-gray-900 mb-4">🏆 Lugares Más Visitados</h2>
+                <div className="space-y-3">
+                  {stats.topDestinos.map((destino, idx) => (
+                    <div key={idx} className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center font-bold text-blue-600">
+                        {idx + 1}
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-semibold text-gray-900">{destino.destino}</p>
+                      </div>
+                      <div className="bg-blue-50 px-3 py-1 rounded-full">
+                        <p className="text-sm font-bold text-blue-600">{destino.count} veces</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Horas Típicas */}
+              <div className="bg-white rounded-xl shadow-lg p-6">
+                <h2 className="text-xl font-bold text-gray-900 mb-4">⏰ Horas Típicas de Salida</h2>
+                <div className="grid grid-cols-3 gap-3">
+                  {stats.topHoras.map((hora, idx) => (
+                    <div key={idx} className="bg-orange-50 rounded-lg p-4 text-center">
+                      <p className="text-2xl font-bold text-orange-600">{hora.hora}</p>
+                      <p className="text-xs text-gray-600 mt-1">{hora.count} rodadas</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Top 10 Ciclistas */}
+              <div className="bg-white rounded-xl shadow-lg p-6">
+                <h2 className="text-xl font-bold text-gray-900 mb-4">🚴‍♂️ Top 10 Ciclistas Más Constantes</h2>
+                <div className="space-y-2">
+                  {stats.topCiclistas.map((ciclista, idx) => (
+                    <div 
+                      key={idx} 
+                      className={`flex items-center gap-3 p-3 rounded-lg ${
+                        idx < 3 ? 'bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-200' : 'bg-gray-50'
+                      }`}
+                    >
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg ${
+                        idx === 0 ? 'bg-yellow-400 text-yellow-900' :
+                        idx === 1 ? 'bg-gray-300 text-gray-700' :
+                        idx === 2 ? 'bg-orange-400 text-orange-900' :
+                        'bg-blue-100 text-blue-600'
+                      }`}>
+                        {idx + 1}
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-semibold text-gray-900">{ciclista.nombre}</p>
+                        <p className="text-xs text-gray-500">ID: {ciclista.id}</p>
+                      </div>
+                      <div className="bg-green-100 px-4 py-2 rounded-full">
+                        <p className="text-lg font-bold text-green-700">{ciclista.count}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Botón Volver */}
+              <button
+                onClick={onBack}
+                className="w-full bg-blue-600 text-white py-4 rounded-lg font-bold text-lg hover:bg-blue-700 transition"
+              >
+                Volver al Inicio
+              </button>
+            </div>
+          </div>
+        );
+      };
 
       // Componente de Registro
       const RegisterScreen = ({ onBack }) => {
@@ -1760,16 +2063,27 @@
       const renderHome = () => (
         <div className="flex-1 flex flex-col">
           <div className="flex-1 bg-gradient-to-br from-gray-100 to-gray-200 p-6 flex flex-col justify-center gap-6">
-            <button
-              onClick={() => setCurrentScreen('checkin')}
-              className="pulse-green bg-green-500 hover:bg-green-600 text-white rounded-2xl p-8 shadow-2xl transform transition hover:scale-105 active:scale-95"
-            >
-              <div className="flex flex-col items-center gap-3">
-                <BikeIcon />
-                <span className="text-2xl font-bold">Check-In Rodada</span>
-                <span className="text-sm opacity-90">Registra tu asistencia</span>
-              </div>
-            </button>
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                onClick={() => setCurrentScreen('checkin')}
+                className="pulse-green bg-green-500 hover:bg-green-600 text-white rounded-2xl p-6 shadow-2xl transform transition hover:scale-105 active:scale-95"
+              >
+                <div className="flex flex-col items-center gap-3">
+                  <BikeIcon />
+                  <span className="text-xl font-bold">Check-In Rodada</span>
+                </div>
+              </button>
+
+              <button
+                onClick={() => setCurrentScreen('dashboard')}
+                className="bg-blue-500 hover:bg-blue-600 text-white rounded-2xl p-6 shadow-2xl transform transition hover:scale-105 active:scale-95"
+              >
+                <div className="flex flex-col items-center gap-3">
+                  <BarChart />
+                  <span className="text-xl font-bold">Dashboard</span>
+                </div>
+              </button>
+            </div>
 
             <div className="grid grid-cols-2 gap-4">
               <button
@@ -1819,6 +2133,7 @@
       );
 
       const getSubtitle = () => {
+        if (currentScreen === 'dashboard') return 'Mobile App - Dashboard';
         if (currentScreen === 'checkin') return 'Mobile App - Check-In';
         if (currentScreen === 'register') return 'Mobile App - Equipo';
         if (currentScreen === 'qrcode') return 'Mobile App - QR Code';
@@ -1832,10 +2147,11 @@
           <div className="bg-white text-black py-6 px-4 text-center border-b-2 border-gray-200 relative">
             <h1 className="text-2xl font-bold">GALLXS - CYCLING CLUB</h1>
             <p className="text-sm font-bold text-gray-700">{getSubtitle()}</p>
-            <span className="absolute bottom-2 right-4 text-xs text-gray-400 font-mono">Beta v1.07.014</span>
+            <span className="absolute bottom-2 right-4 text-xs text-gray-400 font-mono">v1.01</span>
           </div>
 
           {currentScreen === 'home' && renderHome()}
+          {currentScreen === 'dashboard' && <DashboardScreen onBack={() => setCurrentScreen('home')} />}
           {currentScreen === 'checkin' && <CheckInScreen onBack={() => setCurrentScreen('home')} />}
           {currentScreen === 'register' && <RegisterScreen onBack={() => setCurrentScreen('home')} />}
           {currentScreen === 'qrcode' && <QRCodeScreen onBack={() => setCurrentScreen('home')} />}
@@ -1875,5 +2191,6 @@
 
     ReactDOM.render(<GallxsApp />, document.getElementById('root'));
   </script>
+
 </body>
 </html>
