@@ -201,33 +201,34 @@
 
             const currentYear = new Date().getFullYear();
             const destinosCount = {};
-            const horasCount = {};
             const ciclistasCount = {};
+            const rodadasUnicas = new Set(); // Para contar rodadas únicas
             let totalKm = 0;
 
             rodadasRows.forEach(row => {
               const year = row.c[0]?.v;
-              const hora = row.c[3]?.v || '';
+              const month = row.c[1]?.v;
+              const day = row.c[2]?.v;
               const destino = row.c[4]?.v || '';
               const idParticipante = row.c[6]?.v || '';
               const nombreParticipante = row.c[7]?.v || '';
 
               // Solo datos del año actual
               if (year === currentYear) {
+                // Crear identificador único de rodada: año-mes-día-destino
+                const rodadaId = `${year}-${month}-${day}-${destino}`;
+                
                 // Contar destinos
                 if (destino) {
                   destinosCount[destino] = (destinosCount[destino] || 0) + 1;
-                  
-                  // Sumar kilómetros
+                }
+
+                // Sumar kilómetros solo una vez por rodada única
+                if (destino && !rodadasUnicas.has(rodadaId)) {
+                  rodadasUnicas.add(rodadaId);
                   if (rutasMap[destino]) {
                     totalKm += rutasMap[destino];
                   }
-                }
-
-                // Contar horas
-                if (hora) {
-                  const hour = hora.split(':')[0];
-                  horasCount[hour] = (horasCount[hour] || 0) + 1;
                 }
 
                 // Contar participaciones
@@ -249,12 +250,6 @@
               .slice(0, 5)
               .map(([destino, count]) => ({ destino, count }));
 
-            // Horas más comunes
-            const topHoras = Object.entries(horasCount)
-              .sort((a, b) => b[1] - a[1])
-              .slice(0, 3)
-              .map(([hora, count]) => ({ hora: `${hora}:00`, count }));
-
             // Top ciclistas
             const topCiclistas = Object.entries(ciclistasCount)
               .sort((a, b) => b[1].count - a[1].count)
@@ -264,9 +259,8 @@
             setStats({
               totalKm: totalKm.toFixed(2),
               topDestinos,
-              topHoras,
               topCiclistas,
-              totalRodadas: Object.values(destinosCount).reduce((a, b) => a + b, 0)
+              totalRodadas: rodadasUnicas.size
             });
 
           } catch (error) {
@@ -371,19 +365,6 @@
                       <div className="bg-blue-50 px-3 py-1 rounded-full">
                         <p className="text-sm font-bold text-blue-600">{destino.count} veces</p>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Horas Típicas */}
-              <div className="bg-white rounded-xl shadow-lg p-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">⏰ Horas Típicas de Salida</h2>
-                <div className="grid grid-cols-3 gap-3">
-                  {stats.topHoras.map((hora, idx) => (
-                    <div key={idx} className="bg-orange-50 rounded-lg p-4 text-center">
-                      <p className="text-2xl font-bold text-orange-600">{hora.hora}</p>
-                      <p className="text-xs text-gray-600 mt-1">{hora.count} rodadas</p>
                     </div>
                   ))}
                 </div>
