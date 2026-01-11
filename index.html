@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="es">
 <head>
   <meta charset="UTF-8">
@@ -7,23 +6,17 @@
   <meta name="description" content="Gallxs CC - Aplicación móvil para el equipo de entrenamiento">
   <meta name="theme-color" content="#FF9800">
   <title>Gallxs CC - Mobile App</title>
-
+  
   <!-- PWA Manifest -->
-
   <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIkdhbGx4cyBDQyAtIE1vYmlsZSBBcHAiLAogICJzaG9ydF9uYW1lIjogIkdhbGx4cyBDQyIsCiAgImRlc2NyaXB0aW9uIjogIkFwbGljYWNpw7NuIG3Ds3ZpbCBwYXJhIGVsIGVxdWlwbyBkZSBlbnRyZW5hbWllbnRvIEdhbGx4cyIsCiAgInN0YXJ0X3VybCI6ICIuLyIsCiAgImRpc3BsYXkiOiAic3RhbmRhbG9uZSIsCiAgImJhY2tncm91bmRfY29sb3IiOiAiI2ZmZmZmZiIsCiAgInRoZW1lX2NvbG9yIjogIiNGRjk4MDAiLAogICJpY29ucyI6IFsKICAgIHsKICAgICAgInNyYyI6ICJkYXRhOmltYWdlL3N2Zyt4bWwsJTNDc3ZnJTIweG1sbnM9J2h0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnJyUyMHdpZHRoPScxOTInJTIwaGVpZ2h0PScxOTInJTNFJTNDcmVjdCUyMHdpZHRoPScxOTInJTIwaGVpZ2h0PScxOTInJTIwZmlsbD0nJTIzRkY5ODAwJy8lM0UlM0N0ZXh0JTIweD0nOTYnJTIweT0nMTIwJyUyMGZvbnQtc2l6ZT0nODAnJTIwdGV4dC1hbmNob3I9J21pZGRsZSclMjBmaWxsPSclMjNmZmZmZmYnJTIwZm9udC13ZWlnaHQ9J2JvbGQnJTIwZm9udC1mYW1pbHk9J0FyaWFsJTJDc2Fucy1zZXJpZiclM0VHWCUzQy90ZXh0JTNFJTNDL3N2ZyUzRSIsCiAgICAgICJzaXplcyI6ICIxOTJ4MTkyIiwKICAgICAgInR5cGUiOiAiaW1hZ2Uvc3ZnK3htbCIKICAgIH0sCiAgICB7CiAgICAgICJzcmMiOiAiZGF0YTppbWFnZS9zdmcreG1sLCUzQ3N2ZyUyMHhtbG5zPSdodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyclMjB3aWR0aD0nNTEyJyUyMGhlaWdodD0nNTEyJyUzRSUzQ3JlY3QlMjB3aWR0aD0nNTEyJyUyMGhlaWdodD0nNTEyJyUyMGZpbGw9JyUyM0ZGOTgwMCcvJTNFJTNDdGV4dCUyMHg9JzI1NiclMjB5PSczMjAnJTIwZm9udC1zaXplPSclMjAyMTAnJTIwdGV4dC1hbmNob3I9J21pZGRsZSclMjBmaWxsPSclMjNmZmZmZmYnJTIwZm9udC13ZWlnaHQ9J2JvbGQnJTIwZm9udC1mYW1pbHk9J0FyaWFsJTJDc2Fucy1zZXJpZiclM0VHWCUzQy90ZXh0JTNFJTNDL3N2ZyUzRSIsCiAgICAgICJzaXplcyI6ICI1MTJ4NTEyIiwKICAgICAgInR5cGUiOiAiaW1hZ2Uvc3ZnK3htbCIKICAgIH0KICBdCn0=">
-
+  
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
   <script src="https://cdn.tailwindcss.com"></script>
-
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-
   <script src="https://unpkg.com/jsqr@1.4.0/dist/jsQR.js"></script>
-
+  
   <style>
     body { 
       margin: 0; 
@@ -58,7 +51,6 @@
       animation: pulse-red 2s infinite;
     }
   </style>
-
 </head>
 <body>
   <div id="root"></div>
@@ -171,11 +163,11 @@
             const rutasText = await rutasResponse.text();
             const rutasJsonString = rutasText.match(/google\.visualization\.Query\.setResponse\((.*)\);/);
             
+            const rutasMap = {};
             if (rutasJsonString) {
               const rutasJson = JSON.parse(rutasJsonString[1]);
               const rutasRows = rutasJson.table.rows;
               
-              const rutasMap = {};
               rutasRows.forEach(row => {
                 const destino = row.c[0]?.v || '';
                 const distancia = parseFloat(row.c[3]?.v) || 0;
@@ -2191,6 +2183,5 @@
 
     ReactDOM.render(<GallxsApp />, document.getElementById('root'));
   </script>
-
 </body>
 </html>
