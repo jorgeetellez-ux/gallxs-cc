@@ -179,6 +179,25 @@
               setRutas(rutasMap);
             }
 
+            // Cargar usuarios para obtener nicknames
+            const usersResponse = await fetch(SHEET_URL);
+            const usersText = await usersResponse.text();
+            const usersJsonString = usersText.match(/google\.visualization\.Query\.setResponse\((.*)\);/);
+            
+            const usersMap = {};
+            if (usersJsonString) {
+              const usersJson = JSON.parse(usersJsonString[1]);
+              const usersRows = usersJson.table.rows;
+              
+              usersRows.forEach(row => {
+                const id = row.c[3]?.v || '';
+                const nickname = row.c[2]?.v || '';
+                if (id && nickname) {
+                  usersMap[id] = nickname;
+                }
+              });
+            }
+
             // Cargar datos de rodadas
             const rodadasResponse = await fetch(RODADAS_URL);
             const rodadasText = await rodadasResponse.text();
@@ -200,9 +219,9 @@
             }
 
             const currentYear = new Date().getFullYear();
-            const destinosCount = {};
             const ciclistasCount = {};
-            const rodadasUnicas = new Set(); // Para contar rodadas únicas
+            const rodadasUnicas = new Set();
+            const destinosSet = {};
             let totalKm = 0;
 
             rodadasRows.forEach(row => {
@@ -211,31 +230,23 @@
               const day = row.c[2]?.v;
               const destino = row.c[4]?.v || '';
               const idParticipante = row.c[6]?.v || '';
-              const nombreParticipante = row.c[7]?.v || '';
 
-              // Solo datos del año actual
               if (year === currentYear) {
-                // Crear identificador único de rodada: año-mes-día-destino
                 const rodadaId = `${year}-${month}-${day}-${destino}`;
                 
-                // Contar destinos
-                if (destino) {
-                  destinosCount[destino] = (destinosCount[destino] || 0) + 1;
-                }
-
-                // Sumar kilómetros solo una vez por rodada única
                 if (destino && !rodadasUnicas.has(rodadaId)) {
                   rodadasUnicas.add(rodadaId);
+                  destinosSet[destino] = (destinosSet[destino] || 0) + 1;
+                  
                   if (rutasMap[destino]) {
                     totalKm += rutasMap[destino];
                   }
                 }
 
-                // Contar participaciones
-                if (idParticipante && nombreParticipante) {
+                if (idParticipante) {
                   if (!ciclistasCount[idParticipante]) {
                     ciclistasCount[idParticipante] = {
-                      nombre: nombreParticipante,
+                      nickname: usersMap[idParticipante] || idParticipante,
                       count: 0
                     };
                   }
@@ -244,17 +255,15 @@
               }
             });
 
-            // Top destinos
-            const topDestinos = Object.entries(destinosCount)
+            const topDestinos = Object.entries(destinosSet)
               .sort((a, b) => b[1] - a[1])
               .slice(0, 5)
               .map(([destino, count]) => ({ destino, count }));
 
-            // Top ciclistas
             const topCiclistas = Object.entries(ciclistasCount)
               .sort((a, b) => b[1].count - a[1].count)
               .slice(0, 10)
-              .map(([id, data]) => ({ id, nombre: data.nombre, count: data.count }));
+              .map(([id, data]) => ({ id, nickname: data.nickname, count: data.count }));
 
             setStats({
               totalKm: totalKm.toFixed(2),
@@ -390,7 +399,7 @@
                         {idx + 1}
                       </div>
                       <div className="flex-1">
-                        <p className="font-semibold text-gray-900">{ciclista.nombre}</p>
+                        <p className="font-semibold text-gray-900">{ciclista.nickname}</p>
                         <p className="text-xs text-gray-500">ID: {ciclista.id}</p>
                       </div>
                       <div className="bg-green-100 px-4 py-2 rounded-full">
